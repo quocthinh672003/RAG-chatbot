@@ -1,0 +1,13 @@
+# Bỏ qua file chứa thông tin nhạy cảm
+.env
+
+# Bỏ qua thư mục ảo môi trường Python
+.venv/
+venv/
+
+# Bỏ qua file bytecode Python
+__pycache__/
+*.pyc
+
+# Các file logs hoặc tạm thời
+*.log

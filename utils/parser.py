@@ -36,4 +36,12 @@ def parse_file_to_elements( file_path: str, permission_group: List[str], languag
             element_type = element_type,
             content = content,
             page_number = getattr(element, 'page_number', None),
+            image_path = image_path,
+            language = language
         )
+        output_data.append(element_data)
+
+    return {
+        "document_data": document_data,
+        "elements": output_data
+    }
