@@ -25,6 +25,9 @@ RANKER_MODEL = os.getenv("RANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 
 # Ensure that the models are set correctly
 
+# haystack settings
+EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", 384))  # Default dimension for MiniLM
+TOP_K = int(os.getenv("TOP_K", 10))  # Default number of top documents to retrieve
 # chunking
 
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 1000))  # Default chunk size in characters
