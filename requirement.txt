@@ -7,6 +7,9 @@ transformers==4.31.0
 torch>=2.0.0
 unstructured[local-inference]==0.10.19
 python-dotenv
-openai>=0.27.0
+openai>=0.27.0,<0.29.0
 uvicorn
 requests
+fastapi
+python-multipart
+pydantic

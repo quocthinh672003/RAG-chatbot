@@ -1,52 +1,81 @@
 """
-queryt.py
- def retrieve_and_answer(query_text, user_permission_group)
- flow:
- - retriever (haystack embeddingRetriever) -> initial candidates
- - ranker (TransformersRanker / cross-encoder) -> rerank 
- - langchain (LLM) -> answer bằng cách using top-k reranked documents as context
+query.py - Enhanced query using specialized Haystack retrievers
 """
-from utils.qdrant_store import get_qdrant_document_store, get_embedding_retriever
-from haystack import Document
-from haystack.nodes import EmbeddingRetriever, TransformersRanker
-from config import META_PERMISSION_KEY, RANKER_MODEL, TOP_K
-from langchain.llms import OpenAI
-from haystack.pipelines import Pipeline
+from utils.retrievers import retrieve_documents
+from config import LLM_MODEL, OPENAI_API_KEY
+from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain import OpenAI as LangchainOpenAI
 
-def retrieve_and_answer(query_text, user_permission_group, top_k=TOP_K):
+def retrieve_and_answer(query_text: str, top_k: int = 10):
     """
-    user_permission_group: list of groups( e.g.[finance_team])
-    returns dict: { "answer": str, "sources": List[Document] }
+    Enhanced RAG pipeline with specialized retrievers:
+    1. Detect file types in query (optional)
+    2. Use specialized retriever for better results
+    3. Apply advanced ranking pipeline
+    4. Generate answer with LLM
     """
-    # setup store + retriever
-    ds = get_qdrant_document_store()
-    retriever = get_embedding_retriever(ds)
-
-    # haystack retriever with permission filter
-    # haystack filter uses dict with meta key -> values. We will use simple matching (any of groups match)
-    # filter = {META_PERMISSION_KEY: {"$in": user_permission_group}}
-    # build filters: permission group must match any of the user's groups
-
-    filter = {META_PERMISSION_KEY: {"$in": user_permission_group}}
-
-    candidate_docs = retriever.retrieve(
-        query=query_text,
-        top_k=top_k,
-        filters=filter
-    )
-    if not candidate_docs: 
-        return {"answer": "No relevant documents found.", "sources": []}
     
-    #ranker using cross-encoder
-    ranker = TransformersRanker(model_name=RANKER_MODEL)
-    reranked = ranker.predict(
-        query=query_text,
-        documents=candidate_docs
-        top_k=min(top_k, len(candidate_docs))
+    # 1. Retrieve documents using specialized pipeline
+    docs = retrieve_documents(query_text, file_type=None, top_k=top_k)
+    
+    if not docs:
+        return {"answer": "Không tìm thấy tài liệu liên quan.", "sources": [], "total_sources": 0}
+    
+    # 2. Generate answer using LLM
+    llm = ChatOpenAI(
+        model_name=LLM_MODEL,
+        openai_api_key=OPENAI_API_KEY,
+        temperature=0.1,
     )
-    top_docs = reranked["documents"] if "documents" in reranked else candidate_docs
-    # if top doc are images( metadata has image_path), and used ask image, return images
-    image_results = [d for d in top_docs if d.meta.get]
+    
+    # Create context from documents
+    context = "\n\n".join([doc.content for doc in docs])
+    
+    # Create enhanced prompt with file type awareness
+    prompt_template = PromptTemplate(
+        input_variables=["context", "question"],
+        template="""
+        Bạn là một trợ lý AI thông minh. Dựa trên các tài liệu sau đây, hãy trả lời câu hỏi một cách chính xác và đầy đủ.
+        
+        **Hướng dẫn:**
+        - Chỉ trả lời dựa trên thông tin có trong tài liệu được cung cấp
+        - Nếu không thể trả lời từ tài liệu, hãy nói rõ "Tôi không có đủ thông tin để trả lời câu hỏi này"
+        - Trả lời bằng tiếng Việt, mạch lạc và có cấu trúc
+        - Nếu có nhiều thông tin liên quan, hãy tổ chức thành các điểm chính
+        - Chú ý đến loại tài liệu (PDF, Excel, JSON, v.v.) để trả lời phù hợp
+        
+        **Tài liệu tham khảo:**
+        {context}
+        
+        **Câu hỏi:** {question}
+        
+        **Trả lời:**"""
+    )
+    
+    # Generate answer
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+    result = chain.run(context=context, question=query_text)
+    
+    # Prepare sources with enhanced metadata
+    sources = []
+    for i, doc in enumerate(docs, 1):
+        source_info = {
+            "rank": i,
+            "content": doc.content[:300] + "..." if len(doc.content) > 300 else doc.content,
+            "source": doc.meta.get("source_name", "Unknown"),
+            "page": doc.meta.get("page_number", "Unknown"),
+            "score": doc.score if hasattr(doc, 'score') else None,
+            "file_type": doc.meta.get("file_type", "Unknown"),~
+            "file_size": doc.meta.get("file_size", "Unknown"),
+            "processor_type": doc.meta.get("processor_type", "Unknown"),
+            "chunk_size": doc.meta.get("chunk_size", "Unknown"),
+            "chunk_overlap": doc.meta.get("chunk_overlap", "Unknown")
+        }
+        sources.append(source_info)
+    
+    return {
+        "answer": result.strip(),
+        "sources": sources,
+        "total_sources": len(sources)
+    }

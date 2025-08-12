@@ -1,59 +1,55 @@
 """
-ingest.py
-Hàm ingest_document( file_path, permission_group) - parse -> chunk -> write to Qdrant
+ingest.py - Enhanced document ingestion using specialized Haystack pipeline
 """
-from utils.parser import parse_file_to_elements
-from utils.qdrant_store import get_qdrant_document_store, get_embedding_retriever
-from haystack import Document
-from config import CHUNK_OVERLAP, CHUNK_SIZE, META_PERMISSION_KEY
-from haystack.nodes import PreProcessor
-import os
+from utils.converters import convert_file_to_documents
+from utils.qdrant_store import get_qdrant_document_store
+from utils.embeddings import embed_texts
+from haystack.nodes import DocumentCleaner
+from config import CHUNK_SIZE, CHUNK_OVERLAP
+import uuid
+from datetime import datetime
 
-def ingesst_document(file_path, pẻmission_group = None):
+def ingest_document(file_path: str) -> str:
     """
-    1. Parse file to document metadata and elements
-    2. build haystack Document from elements
-    3. Chunk document into smaller parts( preprocessor) if needed
-    4. Write to Qdrant + generate embeddings
-    returns document_id
+    Enhanced document ingestion with specialized processing pipeline:
+    1. Convert file using specialized Haystack converters
+    2. Apply file-type specific processing (already done in converters)
+    3. Clean documents
+    4. Generate embeddings
+    5. Store in Qdrant
     """
-
-    #1 parse file to document metadata and elements
-    doc_metadata, elements = parse_file_to_elements(file_path, permission_group=permission_group)
-  
-    #2 build haystack Document from elements
-    documents = []
-
-    for element in elements:
-        if not element['content'] or not element['metadata'].get("image_path"):
-            continue
-        # meta: include full document_metadata and element-level metadata
-        meta = {
-            **element['metadata'],
-            "document_metadata": doc_metadata["document_metadata"],
-        }
-        # promote permission group to top-level metadata key also for easy by haystack
-        meta[META_PERMISSION_KEY] = doc_metadata["document_metadata"].get("permission_group", permission_group)
-        documents.append(Document(
-            content=element['content'] or "",
-            id=element['element_id'],
-            meta=meta
-        ))
     
-    #3 chunk document into smaller parts, using PreProcessor
-    PreProcessor = PreProcessor(
-        split_chunk_size=CHUNK_SIZE,
-        split_chunk_overlap=CHUNK_OVERLAP,
-        split_respect_sentence_boundary=True, # tránh cắt câu giữa chừng
-        )
-    documents = PreProcessor.process(documents)
-
-    #4 write to Qdrant + generate embeddings
-    ds  = get_qdrant_document_store(recreate=True)
-    ds = write_documents(documents)
-
-    #5 create retriever to embed documents
-    retriever = get_embedding_retriever(ds)
-    ds.update_embeddings(retriever=retriever)
-
-    return doc_metadata["document_metadata"]["document_id"]
+    # Generate document ID
+    doc_id = str(uuid.uuid4())
+    
+    # 1. Convert file to documents using specialized processing pipeline
+    # This already includes file-type specific processing
+    documents = convert_file_to_documents(file_path)
+    
+    # Add document ID and timestamp to metadata
+    for doc in documents:
+        doc.meta["document_id"] = doc_id
+        doc.meta["ingestion_timestamp"] = datetime.now().isoformat()
+    
+    # 2. Final cleaning step (if needed)
+    cleaner = DocumentCleaner(
+        remove_empty_lines=True,
+        remove_extra_whitespaces=True,
+        remove_substrings=None,
+        remove_regex_substrings=None,
+    )
+    cleaned_docs = cleaner.process(documents)
+    
+    # 3. Generate embeddings
+    contents = [doc.content for doc in cleaned_docs]
+    vectors = embed_texts(contents)
+    
+    # Assign embeddings to documents
+    for doc, vec in zip(cleaned_docs, vectors):
+        doc.embedding = vec
+    
+    # 4. Store in Qdrant
+    ds = get_qdrant_document_store(recreate=False)
+    ds.write_documents(cleaned_docs)
+    
+    return doc_id

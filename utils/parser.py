@@ -7,7 +7,7 @@ from unstructured.partition.auto import partition
 from utils.schema import create_document_data, make_element_data
 from typing import List, Dict, Any
 
-def parse_file_to_elements( file_path: str, permission_group: List[str], language: str = 'en') -> Dict[str, Any]:
+def parse_file_to_elements(file_path: str, permission_group: List[str] = None, language: str = 'en') -> Dict[str, Any]:
     """
     Parse a file into document and element data.
     """
