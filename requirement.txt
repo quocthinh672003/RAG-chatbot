@@ -1,20 +1,29 @@
-streamlit==1.26.0
-langchain>=0.0.220
-langchain-openai>=0.1.0
-langchain-community>=0.0.20
-langchain-qdrant>=0.0.1
-qdrant-client==1.10.0
+# Core Dependencies
+streamlit>=1.28.0
+python-dotenv>=1.0.0
 openai>=1.0.0
-python-dotenv
-uvicorn
-requests
-fastapi
-python-multipart
-pydantic
-docx2txt
-PyPDF2
-markdown
-unstructured[local-inference]==0.10.19
-nltk>=3.8
-openpyxl>=3.0.0
+
+# Hybrid RAG Pipeline Dependencies
+# Haystack (Primary)
+farm-haystack==1.19.0
+
+# LangChain (Fallback)
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.3.0
+faiss-cpu>=1.12.0
+
+# Document Processing
+PyPDF2>=3.0.0
+python-docx>=0.8.11
+markdown>=3.5.0
 pandas>=1.5.0
+
+# Utilities
+numpy>=1.24.0
+requests>=2.31.0
+tqdm>=4.65.0
+
+# Optional: For advanced features
+# sentence-transformers>=2.2.0  # For Haystack rankers
+# transformers>=4.31.0  # For Haystack components

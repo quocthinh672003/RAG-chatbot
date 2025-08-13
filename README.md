@@ -1,187 +1,256 @@
-# 🤖 RAG Chatbot - Hệ thống Hỏi Đáp Thông Minh
+# 🤖 Hybrid RAG Chatbot
 
-Hệ thống RAG (Retrieval-Augmented Generation) chatbot có khả năng đọc, hiểu và trích xuất thông tin từ tài liệu để trả lời câu hỏi của người dùng bằng ngôn ngữ tự nhiên.
+**Hybrid RAG Pipeline với Haystack Core + LangChain Fallback** - Giải pháp tối ưu performance và độ tin cậy cao.
 
-## 🚀 Tính năng chính
+## 🚀 Tính năng
 
-### FR1: Module Nạp và Xử lý Tài liệu
-- ✅ Tải lên tài liệu qua Streamlit UI (PDF, DOCX, TXT, MD, XLSX, PPTX, HTML, JSON, CSV)
-- ✅ Sử dụng Haystack converters cho từng loại file
-- ✅ Phân tách văn bản thông minh (chunking)
-- ✅ Vector hóa sử dụng OpenAI text-embedding-3-small
-- ✅ Lưu trữ vào Qdrant Vector Database
+- **🔧 Hybrid Architecture**: Haystack làm core, LangChain làm fallback
+- **📚 Multi-format Support**: PDF, DOCX, TXT, MD, XLSX, XLS, CSV, HTML, JSON
+- **⚡ Auto Fallback**: Tự động chuyển sang LangChain khi Haystack có vấn đề
+- **🎯 Smart Retrieval**: Embedding + Ranking + Diversity
+- **💬 Chat Interface**: UI thân thiện giống ChatGPT
+- **📊 Real-time Stats**: Hiển thị pipeline đang hoạt động
 
-### FR2: Module Tìm kiếm và Trả lời
-- ✅ Giao diện chat thân thiện với Streamlit
-- ✅ Tìm kiếm tương đồng (similarity search)
-- ✅ Tạo câu trả lời bằng GPT-4o-mini
-- ✅ Trích dẫn nguồn tài liệu
+## 🏗️ Kiến trúc Hybrid
 
-### FR3: Module Quản lý (API đơn giản)
-- ✅ Xem danh sách tài liệu qua REST API
-- ✅ Health check hệ thống
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Hybrid RAG Pipeline                      │
+├─────────────────────────────────────────────────────────────┤
+│  🎯 Primary: Haystack Core                                  │
+│  ├── UnstructuredFileConverter (Universal)                 │
+│  ├── PreProcessor (Cleaning + Splitting)                   │
+│  ├── InMemoryDocumentStore                                 │
+│  ├── EmbeddingRetriever (OpenAI)                           │
+│  ├── SentenceTransformersRanker                            │
+│  ├── LostInTheMiddleRanker                                 │
+│  └── PromptNode (OpenAI GPT)                               │
+├─────────────────────────────────────────────────────────────┤
+│  🔄 Fallback: LangChain                                    │
+│  ├── Document Loaders (PDF, DOCX, TXT)                     │
+│  ├── RecursiveCharacterTextSplitter                        │
+│  ├── FAISS Vector Store                                    │
+│  ├── OpenAI Embeddings                                     │
+│  └── LLMChain (OpenAI GPT)                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 🎯 Ưu điểm của Hybrid Approach
+
+### **1. Performance Tối Ưu**
+
+- **Haystack Core**: Xử lý nhanh với pipeline tối ưu
+- **Ranking Layers**: SentenceTransformers + LostInTheMiddle
+- **Memory Efficient**: InMemoryDocumentStore
+
+### **2. Độ Tin Cậy Cao**
+
+- **Auto Fallback**: Tự động chuyển sang LangChain khi có lỗi
+- **Error Handling**: Graceful degradation
+- **Dependency Resilience**: Không bị phụ thuộc vào 1 framework
+
+### **3. Flexibility**
+
+- **Universal Converter**: UnstructuredFileConverter xử lý mọi file type
+- **Configurable**: Dễ dàng thay đổi components
+- **Extensible**: Dễ thêm features mới
 
 ## 🛠️ Cài đặt
 
-### 1. Cài đặt dependencies
+### 1. Clone Repository
+
+```bash
+git clone <repository-url>
+cd RAG-chatbot
+```
+
+### 2. Tạo Environment File
+
+```bash
+# Tạo file .env
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+### 3. Cài đặt Dependencies
+
 ```bash
 pip install -r requirement.txt
 ```
 
-### 2. Cài đặt Qdrant
-```bash
-# Sử dụng Docker (khuyến nghị)
-docker-compose up -d
+### 4. Chạy Application
 
-# Hoặc chạy trực tiếp
-docker run -p 6333:6333 qdrant/qdrant
-```
-
-### 3. Cấu hình môi trường
-Tạo file `.env` trong thư mục gốc:
-```env
-OPENAI_API_KEY=your_openai_key_here
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_COLLECTION_NAME=rag_document
-EMBEDDING_MODEL=text-embedding-3-small
-LLM_MODEL=gpt-4o-mini
-```
-
-## 🚀 Chạy ứng dụng
-
-### 1. Chạy giao diện Streamlit (chính)
 ```bash
 streamlit run app.py
 ```
-Truy cập: http://localhost:8501
 
-### 2. Chạy API admin (tùy chọn)
-```bash
-python api.py
-```
-API docs: http://localhost:8000/docs
-
-## 📖 Hướng dẫn sử dụng
-
-### Giao diện Web (Streamlit)
-
-1. **Upload tài liệu:**
-   - Chọn file từ sidebar (hỗ trợ nhiều định dạng)
-   - Chọn nhóm quyền truy cập
-   - Nhấn "Xử lý và Lưu trữ"
-
-2. **Đặt câu hỏi:**
-   - Nhập câu hỏi vào ô chat
-   - Chọn nhóm quyền truy vấn
-   - Nhấn "Tìm kiếm và Trả lời"
-
-3. **Xem kết quả:**
-   - Câu trả lời từ AI
-   - Nguồn tham khảo với trích dẫn
-   - Lịch sử chat
-
-### API Endpoints (Admin)
-
-#### Xem danh sách tài liệu
-```bash
-GET /documents
-```
-
-#### Kiểm tra trạng thái
-```bash
-GET /health
-```
-
-## 🏗️ Kiến trúc hệ thống
+## 📁 Cấu trúc Project
 
 ```
-RAG Chatbot/
-├── app.py              # Giao diện Streamlit chính
-├── api.py              # API FastAPI
-├── config.py           # Cấu hình hệ thống
-├── core/               # Core logic
-├── services/           # Services
-├── utils/              # Utilities
-├── uploads/            # Thư mục upload
-├── docker-compose.yml  # Khởi động Qdrant
-└── requirement.txt     # Dependencies
-├── simple_api.py       # API admin đơn giản
-├── ingest.py           # Module xử lý tài liệu
-├── query.py            # Module truy vấn và trả lời
-├── config.py           # Cấu hình hệ thống
+RAG-chatbot/
+├── app.py                          # Main Streamlit UI
+├── config.py                       # Configuration management
+├── services/
+│   ├── hybrid_rag_pipeline.py      # 🎯 Hybrid RAG Pipeline
+│   ├── document_service.py         # Document processing
+│   ├── ingest_service.py           # Document ingestion
+│   └── query_service.py            # Query processing
+├── core/
+│   ├── constants.py                # Constants
+│   └── database.py                 # Database utilities
 ├── utils/
-│   ├── converters.py   # Haystack converters cho từng loại file
-│   ├── embeddings.py   # OpenAI embeddings
-│   └── qdrant_store.py # Qdrant database
-└── requirements.txt    # Dependencies
+│   ├── helpers.py                  # Utility functions
+│   ├── parser.py                   # Document parsing
+│   ├── qdrant_store.py            # Vector store
+│   ├── retrievers.py              # Retrieval components
+│   └── schema.py                  # Data schemas
+└── requirement.txt                # Dependencies
 ```
 
-## 🔧 Cấu hình
+## 🔧 Configuration
 
-### Models sử dụng:
-- **Embedding:** OpenAI text-embedding-3-small (1536 dimensions)
-- **LLM:** OpenAI gpt-4o-mini
+### Models Configuration
 
-### Haystack Converters:
-- **PDF:** PDFMinerToDocument
-- **DOCX:** DOCXToDocument
-- **TXT:** TextFileToDocument
-- **MD:** MarkdownToDocument
-- **XLSX:** XLSXToDocument
-- **PPTX:** PPTXToDocument
-- **HTML:** HTMLToDocument
-- **JSON:** JSONConverter
-- **CSV:** CSVToDocument
+```python
+# config.py
+models:
+  embedding_model: "text-embedding-3-small"
+  llm_model: "gpt-4o-mini"
+  embedding_dimension: 1536
+```
 
-### Cấu hình chunking:
-- **Chunk size:** 1000 ký tự
-- **Chunk overlap:** 100 ký tự
-- **Top K:** 10 documents
+### Processing Configuration
 
-## 📝 Ví dụ sử dụng
+```python
+processing:
+  chunk_size: 1000
+  chunk_overlap: 200
+  top_k: 10
+```
 
-### 1. Upload tài liệu qua UI
-- Mở http://localhost:8501
-- Chọn file từ sidebar
-- Chọn nhóm quyền
-- Click "Xử lý và Lưu trữ"
+## 🎮 Sử dụng
 
-### 2. Hỏi đáp
-- Nhập câu hỏi vào ô chat
-- Chọn nhóm quyền truy vấn
-- Click "Tìm kiếm và Trả lời"
+### 1. Upload Documents
 
-### 3. Xem danh sách tài liệu (Admin)
+- Chọn file từ nhiều định dạng
+- Hệ thống tự động detect và xử lý
+- Hiển thị progress và kết quả
+
+### 2. Chat với Documents
+
+- Hỏi câu hỏi về nội dung đã upload
+- Hệ thống trả lời dựa trên context
+- Hiển thị sources tham khảo
+
+### 3. Monitor Pipeline
+
+- Xem pipeline đang hoạt động (Haystack/LangChain)
+- Theo dõi số lượng documents
+- Kiểm tra performance
+
+## 🔄 Hybrid Pipeline Logic
+
+### **Primary Flow (Haystack)**
+
+```python
+# 1. Document Processing
+UnstructuredFileConverter → PreProcessor → InMemoryDocumentStore
+
+# 2. Retrieval Pipeline
+Query → EmbeddingRetriever → SentenceTransformersRanker → LostInTheMiddleRanker → PromptNode
+```
+
+### **Fallback Flow (LangChain)**
+
+```python
+# 1. Document Processing
+DocumentLoader → RecursiveCharacterTextSplitter → FAISS VectorStore
+
+# 2. Retrieval Pipeline
+Query → SimilaritySearch → LLMChain
+```
+
+### **Auto Switch Logic**
+
+```python
+try:
+    # Try Haystack first
+    haystack_result = haystack_pipeline.query(query)
+    return haystack_result
+except Exception:
+    # Fallback to LangChain
+    langchain_result = langchain_pipeline.query(query)
+    return langchain_result
+```
+
+## 📊 Performance Metrics
+
+### **Haystack Core**
+
+- **Speed**: ⚡⚡⚡⚡⚡ (Very Fast)
+- **Memory**: 💾💾💾 (Efficient)
+- **Features**: 🎯🎯🎯🎯🎯 (Full-featured)
+
+### **LangChain Fallback**
+
+- **Speed**: ⚡⚡⚡⚡ (Fast)
+- **Memory**: 💾💾💾💾 (Good)
+- **Features**: 🎯🎯🎯🎯 (Good)
+
+## 🚀 Deployment
+
+### Local Development
+
 ```bash
-curl http://localhost:8000/documents
+streamlit run app.py
 ```
 
-## 🐛 Troubleshooting
+### Production
 
-### Lỗi kết nối Qdrant
 ```bash
-# Kiểm tra Qdrant đang chạy
-curl http://localhost:6333/collections
+# Docker (nếu cần)
+docker-compose up -d
 
-# Khởi động lại Qdrant
-docker-compose restart
+# Hoặc direct
+streamlit run app.py --server.port 8501
 ```
 
-### Lỗi OpenAI API
-- Kiểm tra API key trong file `.env`
-- Đảm bảo có đủ credit trong tài khoản OpenAI
+## 🔧 Troubleshooting
 
-### Lỗi dependencies
-```bash
-# Cài đặt lại dependencies
-pip install -r requirement.txt --force-reinstall
-```
+### **Haystack Import Error**
+
+- Hệ thống tự động chuyển sang LangChain
+- Không cần manual intervention
+
+### **API Key Issues**
+
+- Kiểm tra `.env` file
+- Đảm bảo `OPENAI_API_KEY` đúng format
+
+### **Memory Issues**
+
+- Giảm `chunk_size` trong config
+- Sử dụng ít documents hơn
+
+## 📈 Roadmap
+
+- [ ] **Multi-modal Support**: Images, Audio
+- [ ] **Advanced Ranking**: BM25 + Dense hybrid
+- [ ] **Caching Layer**: Redis integration
+- [ ] **User Management**: Multi-user support
+- [ ] **Analytics Dashboard**: Usage metrics
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create Pull Request
 
 ## 📄 License
 
-Dự án này được phát triển cho mục đích học tập và nghiên cứu.
+MIT License - see LICENSE file for details
 
-## 🤝 Đóng góp
+---
 
-Mọi đóng góp đều được chào đón! Vui lòng tạo issue hoặc pull request.
+**🎯 Hybrid RAG Chatbot** - Tối ưu performance với độ tin cậy cao!
