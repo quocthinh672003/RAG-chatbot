@@ -58,7 +58,7 @@ Truy cập: http://localhost:8501
 
 ### 2. Chạy API admin (tùy chọn)
 ```bash
-python simple_api.py
+python api.py
 ```
 API docs: http://localhost:8000/docs
 
@@ -98,6 +98,14 @@ GET /health
 ```
 RAG Chatbot/
 ├── app.py              # Giao diện Streamlit chính
+├── api.py              # API FastAPI
+├── config.py           # Cấu hình hệ thống
+├── core/               # Core logic
+├── services/           # Services
+├── utils/              # Utilities
+├── uploads/            # Thư mục upload
+├── docker-compose.yml  # Khởi động Qdrant
+└── requirement.txt     # Dependencies
 ├── simple_api.py       # API admin đơn giản
 ├── ingest.py           # Module xử lý tài liệu
 ├── query.py            # Module truy vấn và trả lời

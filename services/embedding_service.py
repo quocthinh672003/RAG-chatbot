@@ -3,7 +3,7 @@ Embedding service
 """
 
 from typing import List
-import openai
+from openai import OpenAI
 from config import config
 
 
@@ -11,12 +11,12 @@ class EmbeddingService:
     """OpenAI embedding service"""
 
     def __init__(self):
-        openai.api_key = config.openai_api_key
+        self.client = OpenAI(api_key=config.openai_api_key)
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings"""
         try:
-            response = openai.Embedding.create(
+            response = self.client.embeddings.create(
                 model=config.models.embedding_model,
                 input=texts,
                 encoding_format="float",
