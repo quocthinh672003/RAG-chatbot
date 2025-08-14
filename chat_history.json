@@ -1,110 +1,92 @@
 [
   {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024)",
-    "answer": "Xin lỗi, nhưng tôi không có thông tin chi tiết về mức tiêu thụ điện năng theo ngành tại Việt Nam trong năm 2024.",
+    "question": "Bảng: Tăng trưởng dân số đô thị tại các thành phố lớn",
+    "answer": "Dưới đây là bảng thống kê tốc độ gia tăng dân số đô thị tại một số thành phố lớn giai đoạn 2010–2024:\n\n| Thành phố         | Dân số (2010) | Dân số (2024) | Tỷ lệ tăng (%) |\n|-------------------|---------------|---------------|-----------------|\n| Hà Nội            | 6.450.000     | 9.080.000     | 40.7%           |\n| TP. Hồ Chí Minh   | 7.890.000     | 10.270.000    | 30.2%           |\n| Đà Nẵng          | 860.000       | 1.230.000     | 43.0%           |\n| Cần Thơ          | 1.050.000     | 1.460.000     | 39.0%           |\n\nTốc độ tăng dân số nhanh làm gia tăng áp lực lên cơ sở hạ tầng, giao thông, hệ thống xử lý rác thải và cấp thoát nước. Nhiều khu vực đô thị mới được mở rộng nhưng thiếu quy hoạch xanh và không gian công cộng.",
     "sources": [
-      "tmpgmc062c1.md",
-      "tmpb5rb56qw.md",
-      "tmpgklp28gz.md",
-      "tmpko0ad_qx.md",
-      "tmpghcsqb02.md"
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "file-excelt-test.xlsx",
+      "tieu-thu-dien-nang.md",
+      "tieu-thu-dien-nang.md",
+      "tieu-thu-dien-nang.md",
+      "file-excelt-test.xlsx",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf"
     ]
   },
   {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024)",
-    "answer": "Mức tiêu thụ điện năng theo ngành tại Việt Nam trong năm 2024 là như sau:\n\n- Công nghiệp chế biến: 78.5 TWh (32%)\n- Xây dựng và hạ tầng: 23.1 TWh (9.4%)\n- Nông - Lâm - Ngư nghiệp: 10.2 TWh (4.2%)\n- Giao thông vận tải: 15.7 TWh (6.4%)\n- Dân dụng (hộ gia đình): 96.3 TWh (39.3%)\n- Dịch vụ - thương mại: 21.4 TWh (8.7%)\n\nDữ liệu dựa trên báo cáo của Bộ Công Thương công bố đầu năm 2025.",
-    "sources": [
-      "tmpgmc062c1.md",
-      "tmpb5rb56qw.md",
-      "tmpko0ad_qx.md",
-      "tmpgklp28gz.md",
-      "tmpghcsqb02.md"
-    ]
-  },
-  {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024)",
-    "answer": "Tôi không biết.",
-    "sources": [
-      "tmpgmc062c1.md",
-      "tmpb5rb56qw.md",
-      "tmpgklp28gz.md",
-      "tmpko0ad_qx.md",
-      "tmpghcsqb02.md"
-    ]
-  },
-  {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024) như nào",
+    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
     "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+    "sources": []
+  },
+  {
+    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
+    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+    "sources": []
+  },
+  {
+    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
+    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm.",
     "sources": [
-      "tmpj07rl4dt.docx",
-      "tmpl1a4jo6e.docx",
-      "tmpbphho3o8.docx",
-      "tmp2uowtl1l.docx",
-      "tmply_k4h6d.docx",
-      "tmpamyj_8fu.docx",
-      "tmp3gacp907.docx",
-      "tmpzn3bubf5.docx",
-      "tmp7j5cad41.docx",
-      "tmpa9at6whn.docx",
-      "tmply_k4h6d.docx",
-      "tmpamyj_8fu.docx"
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "tieu-thu-dien-nang.md",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "file-excelt-test.xlsx",
+      "tieu-thu-dien-nang.md"
     ]
   },
   {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024) như nào\n",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
+    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm. \n\n![Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm](Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm)",
     "sources": [
-      "tmp3gacp907.docx",
-      "tmpa9at6whn.docx",
-      "tmp7j5cad41.docx",
-      "tmply_k4h6d.docx",
-      "tmpzn3bubf5.docx",
-      "tmpamyj_8fu.docx",
-      "tmp2uowtl1l.docx",
-      "tmpl1a4jo6e.docx",
-      "tmpj07rl4dt.docx",
-      "tmpbphho3o8.docx",
-      "tmply_k4h6d.docx",
-      "tmpamyj_8fu.docx"
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "tieu-thu-dien-nang.md",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "file-excelt-test.xlsx",
+      "tieu-thu-dien-nang.md"
     ]
   },
   {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024) như nào",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
+    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm. \n\n![Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm](image_link_placeholder) \n\n(Note: Hình ảnh không được cung cấp trong ngữ cảnh, chỉ có mô tả về tình trạng giao thông đông đúc.)",
     "sources": [
-      "tmp3gacp907.docx",
-      "tmpa9at6whn.docx",
-      "tmp7j5cad41.docx",
-      "tmply_k4h6d.docx",
-      "tmpzn3bubf5.docx",
-      "tmpamyj_8fu.docx",
-      "tmp2uowtl1l.docx",
-      "tmpl1a4jo6e.docx",
-      "tmpj07rl4dt.docx",
-      "tmpbphho3o8.docx",
-      "tmply_k4h6d.docx",
-      "tmpamyj_8fu.docx"
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "tieu-thu-dien-nang.md",
+      "file-excelt-test.xlsx",
+      "Market_Research_Report_3Products_AI Tools.xlsx",
+      "tieu-thu-dien-nang.md",
+      "tieu-thu-dien-nang.md",
+      "file-excelt-test.xlsx"
     ]
   },
   {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024) như nào",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+    "question": "Tăng trưởng dân số đô thị tại các thành phố lớn",
+    "answer": "Dưới đây là bảng thống kê tốc độ gia tăng dân số đô thị tại một số thành phố lớn giai đoạn 2010–2024:\n\n| Thành phố         | Dân số (2010) | Dân số (2024) | Tỷ lệ tăng (%) |\n|-------------------|---------------|---------------|-----------------|\n| Hà Nội            | 6.450.000     | 9.080.000     | 40.7%           |\n| TP. Hồ Chí Minh   | 7.890.000     | 10.270.000    | 30.2%           |\n| Đà Nẵng          | 860.000       | 1.230.000     | 43.0%           |\n| Cần Thơ          | 1.050.000     |               |                 |\n\nTỷ lệ tăng dân số đô thị tại Đà Nẵng là 43.0%, cao nhất trong số các thành phố được liệt kê.",
     "sources": [
-      "Unknown"
-    ]
-  },
-  {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024)",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
-    "sources": [
-      "Unknown"
-    ]
-  },
-  {
-    "question": "Mức tiêu thụ điện năng theo ngành tại Việt Nam (2024)",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
-    "sources": [
-      "Unknown"
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "Đô Thị Hóa.docx",
+      "tieu-thu-dien-nang.md",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Market_Research_Report_3Products_AI Tools.xlsx",
+      "Market_Research_Report_3Products_AI Tools.xlsx",
+      "Market_Research_Report_3Products_AI Tools.xlsx",
+      "file-excelt-test.xlsx"
     ]
   }
 ]

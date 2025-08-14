@@ -231,26 +231,4 @@ streamlit run app.py --server.port 8501
 - Giảm `chunk_size` trong config
 - Sử dụng ít documents hơn
 
-## 📈 Roadmap
 
-- [ ] **Multi-modal Support**: Images, Audio
-- [ ] **Advanced Ranking**: BM25 + Dense hybrid
-- [ ] **Caching Layer**: Redis integration
-- [ ] **User Management**: Multi-user support
-- [ ] **Analytics Dashboard**: Usage metrics
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
----
-
-**🎯 Hybrid RAG Chatbot** - Tối ưu performance với độ tin cậy cao!
