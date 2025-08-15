@@ -1,68 +1,145 @@
 """
-Hybrid RAG Pipeline: Haystack Core + LangChain Fallback
+Hybrid RAG Pipeline - Haystack + LangChain Fallback
+
+Mục đích:
+- Tạo RAG pipeline sử dụng Haystack framework (ưu tiên)
+- Fallback sang LangChain nếu Haystack không khả dụng
+- Xử lý document ingestion và query processing
+- Quản lý vector store và embedding
+
+Công nghệ sử dụng:
+- Haystack: RAG framework chính (nếu khả dụng)
+- LangChain: Fallback RAG framework
+- OpenAI: LLM cho text generation
+- Qdrant: Vector store cho persistence
+
+Kiến trúc:
+1. Document Processing: Chunking và embedding
+2. Vector Storage: Qdrant Cloud
+3. Retrieval: Semantic search với top-k results
+4. Generation: LLM response với context
 """
 
 from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime
 import uuid
+import logging
 
-# Skip Haystack due to Pydantic DataFrame conflict
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Try Haystack first
 HAYSTACK_AVAILABLE = False
+try:
+    # Create a clean environment for Haystack
+    import os
+    import sys
+    
+    # Temporarily remove pandas from sys.modules
+    original_modules = {}
+    problematic_modules = ['pandas', 'numpy', 'pandas.core.frame']
+    
+    for module_name in problematic_modules:
+        if module_name in sys.modules:
+            original_modules[module_name] = sys.modules[module_name]
+            del sys.modules[module_name]
+    
+    # Set environment variables for Haystack
+    os.environ['PYDANTIC_ARBITRARY_TYPES_ALLOWED'] = 'true'
+    os.environ['PYDANTIC_IGNORE_UNKNOWN'] = 'true'
+    
+    # Import Haystack components
+    from haystack import Pipeline
+    from haystack.document_stores import InMemoryDocumentStore
+    from haystack.nodes import EmbeddingRetriever, PromptNode, PromptTemplate
+    
+    # Restore original modules
+    for module_name, module in original_modules.items():
+        sys.modules[module_name] = module
+    
+    HAYSTACK_AVAILABLE = True
+    logger.info("✅ Haystack enabled successfully")
+except Exception as e:
+    logger.warning(f"⚠️ Haystack not available: {e}")
+    # Restore original modules if failed
+    if 'original_modules' in locals():
+        for module_name, module in original_modules.items():
+            sys.modules[module_name] = module
 
-# LangChain fallback
+# Try LangChain as fallback
+LANGCHAIN_AVAILABLE = False
 try:
     from langchain_openai import OpenAIEmbeddings, ChatOpenAI
     from langchain_community.vectorstores import FAISS
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     from langchain.prompts import PromptTemplate as LangChainPromptTemplate
     from langchain.chains import LLMChain
-
+    
     LANGCHAIN_AVAILABLE = True
-    print("LangChain fallback loaded successfully")
-except ImportError as e:
-    print(f"LangChain not available: {e}")
-    LANGCHAIN_AVAILABLE = False
+    logger.info("✅ LangChain enabled as fallback")
+except Exception as e:
+    logger.warning(f"⚠️ LangChain not available: {e}")
+
+if not HAYSTACK_AVAILABLE and not LANGCHAIN_AVAILABLE:
+    logger.error("❌ Neither Haystack nor LangChain available!")
 
 from config import config
 
 
 class HybridRAGPipeline:
-    """Hybrid RAG Pipeline with Haystack core + LangChain fallback"""
+    """
+    Hybrid RAG Pipeline
+    
+    Chức năng chính:
+    1. Khởi tạo pipeline với Haystack framework (ưu tiên)
+    2. Fallback sang LangChain nếu Haystack không khả dụng
+    3. Xử lý document ingestion
+    4. Thực hiện query processing
+    5. Quản lý vector store
+    """
 
     def __init__(self):
-        self.use_haystack = HAYSTACK_AVAILABLE
-        self.use_langchain = not HAYSTACK_AVAILABLE and LANGCHAIN_AVAILABLE
-
-        if self.use_haystack:
+        """
+        Khởi tạo Hybrid RAG Pipeline
+        - Kiểm tra availability của Haystack và LangChain
+        - Khởi tạo pipeline phù hợp
+        """
+        if HAYSTACK_AVAILABLE:
             self._init_haystack()
-        elif self.use_langchain:
+            self.active_pipeline = "Haystack"
+            logger.info("🎯 Using Haystack as primary RAG pipeline")
+        elif LANGCHAIN_AVAILABLE:
             self._init_langchain()
+            self.active_pipeline = "LangChain"
+            logger.info("🔄 Using LangChain as fallback RAG pipeline")
         else:
             raise ImportError("Neither Haystack nor LangChain available")
 
     def _init_haystack(self):
-        """Initialize Haystack pipeline"""
+        """
+        Khởi tạo Haystack pipeline
+        
+        Components:
+        - Document Store: InMemoryDocumentStore với cosine similarity
+        - Retriever: EmbeddingRetriever với OpenAI embeddings
+        - Prompt Template: Template tùy chỉnh cho tiếng Việt
+        - LLM: PromptNode với OpenAI model
+        """
         try:
             # Document store
             self.document_store = InMemoryDocumentStore(
                 embedding_dim=config.models.embedding_dimension, similarity="cosine"
             )
 
-            # Retriever
+            # Retriever với top_k cao hơn để có nhiều context
             self.retriever = EmbeddingRetriever(
                 document_store=self.document_store,
                 embedding_model=config.models.embedding_model,
                 model_format="openai",
                 api_key=config.openai_api_key,
-                top_k=config.processing.top_k,
+                top_k=min(config.processing.top_k * 2, 10),  # Lấy nhiều documents hơn
             )
-
-            # Rankers
-            self.similarity_ranker = SentenceTransformersRanker(
-                model_name_or_path="cross-encoder/ms-marco-MiniLM-L-6-v2"
-            )
-            self.diversity_ranker = LostInTheMiddleRanker()
 
             # Prompt template
             self.prompt_template = PromptTemplate(
@@ -100,90 +177,85 @@ class HybridRAGPipeline:
 
             # Build pipeline
             self.pipeline = self._build_haystack_pipeline()
-            print("Haystack pipeline initialized successfully")
+            logger.info("✅ Haystack pipeline initialized successfully")
 
         except Exception as e:
-            print(f"Haystack initialization failed: {e}")
-            self.use_haystack = False
-            if LANGCHAIN_AVAILABLE:
-                self._init_langchain()
-            else:
-                raise e
+            logger.error(f"❌ Haystack initialization failed: {e}")
+            raise e
 
     def _init_langchain(self):
-        """Initialize LangChain fallback"""
+        """
+        Khởi tạo LangChain pipeline
+        
+        Components:
+        - Document Store: FAISS với OpenAI embeddings
+        - Retriever: FAISS similarity search
+        - Prompt Template: LangChain PromptTemplate
+        - LLM: LangChain LLMChain
+        """
         try:
             # Embeddings
             self.embeddings = OpenAIEmbeddings(
-                model="text-embedding-3-small", openai_api_key=config.openai_api_key
+                model=config.models.embedding_model,
+                api_key=config.openai_api_key,
             )
 
-            # Vector store (lazy init on first add)
-            self.vector_store = None
-            self._simple_store_texts = []
-            self._simple_store_vectors = []
-            self._simple_store_metas = []
-            
-            # Try to load existing FAISS index
-            try:
-                if os.path.exists("faiss_index"):
-                    from langchain_community.vectorstores import FAISS
-                    self.vector_store = FAISS.load_local("faiss_index", self.embeddings)
-                    print("Loaded existing FAISS index")
-            except Exception as e:
-                print(f"Could not load existing FAISS index: {e}")
-                self.vector_store = None
+            # Document store - start with empty texts
+            self.document_store = FAISS.from_texts(
+                texts=[""],
+                embedding=self.embeddings,
+            )
 
             # Text splitter
             self.text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=config.processing.chunk_size,
                 chunk_overlap=config.processing.chunk_overlap,
-                length_function=len,
-            )
-
-            # LLM
-            self.llm = ChatOpenAI(
-                model_name=config.models.llm_model,
-                temperature=0.2,
-                openai_api_key=config.openai_api_key,
-                max_tokens=1200,
             )
 
             # Prompt template
             self.prompt_template = LangChainPromptTemplate(
-                input_variables=["context", "question"],
+                input_variables=["context", "query"],
                 template="""
-                Bạn là trợ lý dữ liệu, trả lời dựa trên NGỮ CẢNH được cung cấp.
-                
-                Hướng dẫn trả lời (bằng tiếng Việt):
+                Bạn là trợ lý dữ liệu, chỉ trả lời dựa trên NGỮ CẢNH được cung cấp.
+                YÊU CẦU: 
                 - Trả lời dựa trên thông tin có trong ngữ cảnh
+                - Không tự thêm thông tin không có trong ngữ cảnh
                 - Nếu có bảng: hiển thị bảng chính xác
                 - Nếu có bullet points: liệt kê chính xác
+
+                Hướng dẫn trả lời (bằng tiếng Việt):
+                - Nếu có bảng: xuất lại bảng Markdown đầy đủ từ dữ liệu trong ngữ cảnh
+                - Nếu có bullet points: liệt kê chính xác theo ngữ cảnh
                 - Nếu có số liệu: trích đúng số, kèm đơn vị
-                - Nếu có link/URL: hiển thị link đầy đủ
-                - Nếu có image/video/audio: hiển thị đầy đủ
-                - Nếu có reference name/identifier: hiển thị đầy đủ
-                - Khi được hỏi về link/reference: tìm và liệt kê tất cả reference name có trong ngữ cảnh
-                - Khi được hỏi "Có link nào": tìm tất cả text có dạng reference name, identifier, tên báo cáo, hoặc bất kỳ text nào có thể là link/reference
-                - Nếu thấy text có dạng "Market Insights", "AHA", "WEF", "PHTI", hoặc tên báo cáo khác: liệt kê tất cả
-                - Nếu có thông tin liên quan (dù ít): hãy trả lời dựa trên thông tin đó
-                - Chỉ trả lời 'Không tìm thấy thông tin trong tài liệu đã cung cấp.' khi hoàn toàn không có thông tin liên quan
+                - Nếu ngữ cảnh không có thông tin liên quan: trả lời: 'Không tìm thấy thông tin trong tài liệu đã cung cấp.'
 
                 [Ngữ cảnh]:
                 {context}
 
-                [Câu hỏi]: {question}
+                [Câu hỏi]: {query}
 
                 Trả lời dựa trên ngữ cảnh được cung cấp.
                 """,
             )
 
-            # Modern chain using RunnableSequence
-            self.chain = self.prompt_template | self.llm
-            print("LangChain fallback initialized successfully")
+            # LLM
+            self.llm = ChatOpenAI(
+                model=config.models.llm_model,
+                api_key=config.openai_api_key,
+                temperature=0.2,
+                max_tokens=1200,
+            )
+
+            # Chain
+            self.chain = LLMChain(
+                llm=self.llm,
+                prompt=self.prompt_template,
+            )
+
+            logger.info("✅ LangChain pipeline initialized successfully")
 
         except Exception as e:
-            print(f"LangChain initialization failed: {e}")
+            logger.error(f"❌ LangChain initialization failed: {e}")
             raise e
 
     def _build_haystack_pipeline(self):
@@ -191,79 +263,43 @@ class HybridRAGPipeline:
         pipeline = Pipeline()
         pipeline.add_node(component=self.retriever, name="Retriever", inputs=["Query"])
         pipeline.add_node(
-            component=self.similarity_ranker,
-            name="SimilarityRanker",
-            inputs=["Retriever"],
-        )
-        pipeline.add_node(
-            component=self.diversity_ranker,
-            name="DiversityRanker",
-            inputs=["SimilarityRanker"],
-        )
-        pipeline.add_node(
-            component=self.prompt_node, name="PromptNode", inputs=["DiversityRanker"]
+            component=self.prompt_node, name="PromptNode", inputs=["Retriever"]
         )
         return pipeline
 
     def add_documents(self, documents):
         """Add documents to the pipeline"""
         try:
-            if self.use_haystack:
+            if self.active_pipeline == "Haystack":
                 # Add to Haystack document store
                 self.document_store.write_documents(documents)
                 self.retriever.update_embeddings(documents)
-                print(f"Added {len(documents)} documents to Haystack pipeline")
-            elif self.use_langchain:
-                # Add to LangChain vector store
-                # Prepare all texts and metas
-                all_texts = []
-                all_metas = []
+            else:  # LangChain
+                # Process documents for LangChain
+                texts = []
+                metadatas = []
                 for doc in documents:
-                    # Handle both Haystack and LangChain document formats
-                    if hasattr(doc, "content"):
-                        content = doc.content
-                        meta = doc.meta if hasattr(doc, "meta") else {}
-                    else:
-                        content = doc.page_content
-                        meta = doc.metadata
-
-                    chunk_texts = self.text_splitter.split_text(content)
-                    all_texts.extend(chunk_texts)
-                    all_metas.extend([meta] * len(chunk_texts))
-
-                # Try FAISS first if available
-                if self.vector_store is None:
-                    try:
-                        from langchain_community.vectorstores import FAISS  # local import to delay faiss
-                        self.vector_store = FAISS.from_texts(all_texts, self.embeddings, metadatas=all_metas)
-                        # Save FAISS index to disk
-                        self.vector_store.save_local("faiss_index")
-                        print(f"Added {len(documents)} documents to LangChain pipeline (FAISS) and saved to disk")
-                        return
-                    except Exception as e:
-                        print(f"FAISS unavailable, using simple in-memory store: {e}")
-                        self.vector_store = None
-
-                if self.vector_store is not None:
-                    self.vector_store.add_texts(all_texts, metadatas=all_metas)
-                    # Save updated FAISS index to disk
-                    self.vector_store.save_local("faiss_index")
-                    print(f"Added {len(documents)} documents to LangChain pipeline (FAISS) and saved to disk")
-                else:
-                    # Simple in-memory store with precomputed embeddings
-                    embeddings = self.embeddings.embed_documents(all_texts)
-                    self._simple_store_texts.extend(all_texts)
-                    self._simple_store_metas.extend(all_metas)
-                    self._simple_store_vectors.extend(embeddings)
-                    print(f"Added {len(documents)} documents to LangChain pipeline (simple store)")
+                    # Split text into chunks
+                    chunks = self.text_splitter.split_text(doc.page_content)
+                    for chunk in chunks:
+                        texts.append(chunk)
+                        metadatas.append({
+                            "source_name": doc.metadata.get("source_name", "Unknown"),
+                            "page": doc.metadata.get("page", 0)
+                        })
+                
+                # Add to FAISS
+                self.document_store.add_texts(texts=texts, metadatas=metadatas)
+            
+            logger.info(f"✅ Added {len(documents)} documents to {self.active_pipeline} pipeline")
         except Exception as e:
-            print(f"Error adding documents: {e}")
+            logger.error(f"❌ Error adding documents: {e}")
             raise e
 
     def query(self, query: str) -> Dict[str, Any]:
-        """Query the RAG pipeline"""
+        """Query the pipeline"""
         try:
-            if self.use_haystack:
+            if self.active_pipeline == "Haystack":
                 # Use Haystack pipeline
                 result = self.pipeline.run(query=query)
                 return {
@@ -277,59 +313,40 @@ class HybridRAGPipeline:
                         doc.meta.get("source_name", "Unknown")
                         for doc in result["documents"]
                     ],
-                    "pipeline": "Haystack",
+                    "pipeline": self.active_pipeline,
                 }
-            elif self.use_langchain:
-                # Use LangChain fallback
-                if self.vector_store is not None:
-                    docs = self.vector_store.similarity_search(
-                        query, k=config.processing.top_k
-                    )
-                else:
-                    # Simple cosine similarity over in-memory vectors
-                    import math
-                    if not self._simple_store_vectors:
-                        docs = []
-                    else:
-                        q_vec = self.embeddings.embed_query(query)
-                        # Normalize
-                        def norm(v):
-                            return math.sqrt(sum(x*x for x in v)) or 1.0
-                        qn = norm(q_vec)
-                        scores = []
-                        for idx, vec in enumerate(self._simple_store_vectors):
-                            vn = norm(vec)
-                            dot = sum(a*b for a,b in zip(q_vec, vec))
-                            scores.append((idx, dot/(qn*vn)))
-                        scores.sort(key=lambda x: x[1], reverse=True)
-                        top = scores[: config.processing.top_k]
-                        # Wrap in LangChain-like Document objects
-                        from types import SimpleNamespace
-                        docs = [
-                            SimpleNamespace(page_content=self._simple_store_texts[i], metadata=self._simple_store_metas[i])
-                            for i,_ in top
-                        ]
-                context = "\n\n".join([getattr(doc, 'page_content', '') for doc in docs])
+            else:  # LangChain
+                # Use LangChain pipeline
+                # Search for relevant documents
+                docs = self.document_store.similarity_search(
+                    query, k=config.processing.top_k
+                )
                 
-                # Debug: Print context for troubleshooting
-                print(f"DEBUG: Context length = {len(context)}")
-                print(f"DEBUG: Context preview = {context[:500]}...")
-                print(f"DEBUG: Query = {query}")
-
-                result = self.chain.invoke({"context": context, "question": query})
-
+                if not docs:
+                    return {
+                        "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
+                        "documents": [],
+                        "sources": [],
+                        "pipeline": self.active_pipeline,
+                    }
+                
+                # Combine context
+                context = "\n\n".join([doc.page_content for doc in docs])
+                
+                # Generate answer
+                result = self.chain.run(context=context, query=query)
+                
                 return {
-                    "answer": (
-                        result.content if hasattr(result, "content") else str(result)
-                    ),
+                    "answer": result,
                     "documents": docs,
                     "sources": [
-                        (getattr(doc, 'metadata', {}) or {}).get("source_name", "Unknown") for doc in docs
+                        doc.metadata.get("source_name", "Unknown")
+                        for doc in docs
                     ],
-                    "pipeline": "LangChain",
+                    "pipeline": self.active_pipeline,
                 }
         except Exception as e:
-            print(f"Error in RAG pipeline: {e}")
+            logger.error(f"❌ Error in RAG pipeline: {e}")
             return {
                 "answer": "Có lỗi xảy ra khi xử lý câu hỏi.",
                 "documents": [],
@@ -340,100 +357,40 @@ class HybridRAGPipeline:
     def get_document_count(self) -> int:
         """Get number of documents in store"""
         try:
-            if self.use_haystack:
+            if self.active_pipeline == "Haystack":
                 return self.document_store.get_document_count()
-            elif self.use_langchain:
-                if self.vector_store is not None:
-                    return len(self.vector_store.index_to_docstore_id)
-                else:
-                    return len(self._simple_store_texts)
+            else:  # LangChain
+                return len(self.document_store.index_to_docstore_id)
         except Exception as e:
-            print(f"Error getting document count: {e}")
+            logger.error(f"❌ Error getting document count: {e}")
             return 0
 
     def get_pipeline_info(self) -> Dict[str, Any]:
         """Get pipeline information"""
         return {
             "document_count": self.get_document_count(),
-            "pipeline_type": (
-                "Haystack Core + LangChain Fallback"
-                if self.use_haystack
-                else "LangChain Fallback"
-            ),
-            "active_pipeline": "Haystack" if self.use_haystack else "LangChain",
+            "pipeline_type": "Hybrid RAG Pipeline",
+            "active_pipeline": self.active_pipeline,
             "components": [
                 "OpenAIEmbedder",
-                (
-                    "InMemoryEmbeddingRetriever"
-                    if self.use_haystack
-                    else "FAISS VectorStore"
-                ),
-                (
-                    "SentenceTransformersRanker"
-                    if self.use_haystack
-                    else "SimilaritySearch"
-                ),
-                "LostInTheMiddleRanker" if self.use_haystack else "N/A",
+                "InMemoryEmbeddingRetriever", 
                 "OpenAIGenerator",
             ],
         }
 
 
 # Global pipeline instance
-try:
-    rag_pipeline = HybridRAGPipeline()
-    print(
-        f"Hybrid RAG Pipeline initialized with {rag_pipeline.get_pipeline_info()['active_pipeline']}"
-    )
-    
-    # Reload documents if processed_files.txt exists
-    if os.path.exists("processed_files.txt"):
-                try:
-                    from services.ingest_service import ingestion_service
-                    from services.image_database import image_db
-            
-            with open("processed_files.txt", "r", encoding="utf-8") as f:
-                processed_files = [line.strip() for line in f.readlines() if line.strip()]
-            
-            if processed_files:
-                print(f"Reloading {len(processed_files)} processed files...")
-                for file_name in processed_files:
-                    # Fix double extensions (e.g., .pdf.pdf -> .pdf)
-                    clean_name = file_name
-                    if clean_name.endswith('.pdf.pdf'):
-                        clean_name = clean_name.replace('.pdf.pdf', '.pdf')
-                    elif clean_name.endswith('.docx.docx'):
-                        clean_name = clean_name.replace('.docx.docx', '.docx')
-                    elif clean_name.endswith('.xlsx.xlsx'):
-                        clean_name = clean_name.replace('.xlsx.xlsx', '.xlsx')
-                    elif clean_name.endswith('.md.md'):
-                        clean_name = clean_name.replace('.md.md', '.md')
-                    
-                    # Try to find file in uploads folder
-                    file_path = os.path.join("uploads", clean_name)
-                    if not os.path.exists(file_path):
-                        # Try with original name
-                        file_path = os.path.join("uploads", file_name)
-                    if not os.path.exists(file_path):
-                        # Try original path
-                        file_path = clean_name
-                    
-                    if os.path.exists(file_path):
-                        try:
-                            # Ingest document via ingestion service (handles splitting and adding to pipeline)
-                            doc_id = ingestion_service.ingest_document(file_path)
-                            if doc_id:
-                                # Also extract images into the image database so they are queryable after restart
-                                image_db.extract_images_from_any_file(file_path, clean_name)
-                                print(f"Reloaded: {clean_name}")
-                        except Exception as e:
-                            print(f"Failed to reload {clean_name}: {e}")
-                    else:
-                        print(f"File not found: {clean_name} (tried: {file_path})")
-                        
+rag_pipeline = None
+
+def get_rag_pipeline():
+    global rag_pipeline
+    if rag_pipeline is None:
+        try:
+            rag_pipeline = HybridRAGPipeline()
+            logger.info(
+                f"✅ Hybrid RAG Pipeline initialized successfully"
+            )
         except Exception as e:
-            print(f"Error reloading documents: {e}")
-            
-except Exception as e:
-    print(f"Failed to initialize Hybrid RAG Pipeline: {e}")
-    rag_pipeline = None
+            logger.error(f"❌ Failed to initialize Hybrid RAG Pipeline: {e}")
+            rag_pipeline = None
+    return rag_pipeline

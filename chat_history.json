@@ -1,92 +1,19 @@
 [
   {
-    "question": "Bảng: Tăng trưởng dân số đô thị tại các thành phố lớn",
-    "answer": "Dưới đây là bảng thống kê tốc độ gia tăng dân số đô thị tại một số thành phố lớn giai đoạn 2010–2024:\n\n| Thành phố         | Dân số (2010) | Dân số (2024) | Tỷ lệ tăng (%) |\n|-------------------|---------------|---------------|-----------------|\n| Hà Nội            | 6.450.000     | 9.080.000     | 40.7%           |\n| TP. Hồ Chí Minh   | 7.890.000     | 10.270.000    | 30.2%           |\n| Đà Nẵng          | 860.000       | 1.230.000     | 43.0%           |\n| Cần Thơ          | 1.050.000     | 1.460.000     | 39.0%           |\n\nTốc độ tăng dân số nhanh làm gia tăng áp lực lên cơ sở hạ tầng, giao thông, hệ thống xử lý rác thải và cấp thoát nước. Nhiều khu vực đô thị mới được mở rộng nhưng thiếu quy hoạch xanh và không gian công cộng.",
+    "question": " Một số tác động của BĐKH đến nông nghiệp tại các vùng của \nViệt Nam",
+    "answer": "Dưới đây là một số tác động của biến đổi khí hậu (BĐKH) đến nông nghiệp tại các vùng của Việt Nam:\n\n| Khu vực                     | Tác động chính của BĐKH                     | Loại hình sản xuất bị ảnh hưởng                |\n|-----------------------------|---------------------------------------------|-----------------------------------------------|\n| Đồng bằng sông Cửu Long     | Xâm nhập mặn, hạn hán kéo dài              | Trồng lúa, nuôi trồng thủy sản               |\n| Tây Nguyên                  | Khô hạn, nguy cơ cháy rừng                  | Cà phê, hồ tiêu, cao su                       |\n| Miền Trung                  | Bão lũ bất thường, xói mòn đất             | Chăn nuôi, rau màu, lâm nghiệp                |\n| Bắc Bộ                      | Nhiệt độ tăng, mùa đông ngắn hơn            | Lúa mùa, cây ăn quả, chăn nuôi               |\n\nBiến đổi khí hậu đã và đang trở thành một trong những thách thức lớn nhất đối với nền nông nghiệp toàn cầu, đặc biệt tại Việt Nam, nơi mà sản xuất nông nghiệp đóng vai trò quan trọng trong nền kinh tế. Những hiện tượng như mực nước biển dâng, hạn hán kéo dài, lũ lụt bất thường và xâm nhập mặn đang đe dọa đến an ninh lương thực và sinh kế của hàng triệu người dân.",
     "sources": [
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
       "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+      "tieu-thu-dien-nang.md",
       "Đô Thị Hóa.docx",
       "file-excelt-test.xlsx",
-      "tieu-thu-dien-nang.md",
-      "tieu-thu-dien-nang.md",
-      "tieu-thu-dien-nang.md",
-      "file-excelt-test.xlsx",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf"
-    ]
-  },
-  {
-    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
-    "sources": []
-  },
-  {
-    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
-    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
-    "sources": []
-  },
-  {
-    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
-    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm.",
-    "sources": [
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "tieu-thu-dien-nang.md",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "file-excelt-test.xlsx",
-      "tieu-thu-dien-nang.md"
-    ]
-  },
-  {
-    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
-    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm. \n\n![Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm](Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm)",
-    "sources": [
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "tieu-thu-dien-nang.md",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "file-excelt-test.xlsx",
-      "tieu-thu-dien-nang.md"
-    ]
-  },
-  {
-    "question": "hình Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm",
-    "answer": "Hình 1. Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm. \n\n![Giao thông đông đúc tại một tuyến đường trung tâm Hà Nội vào giờ cao điểm](image_link_placeholder) \n\n(Note: Hình ảnh không được cung cấp trong ngữ cảnh, chỉ có mô tả về tình trạng giao thông đông đúc.)",
-    "sources": [
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "tieu-thu-dien-nang.md",
-      "file-excelt-test.xlsx",
-      "Market_Research_Report_3Products_AI Tools.xlsx",
-      "tieu-thu-dien-nang.md",
-      "tieu-thu-dien-nang.md",
-      "file-excelt-test.xlsx"
-    ]
-  },
-  {
-    "question": "Tăng trưởng dân số đô thị tại các thành phố lớn",
-    "answer": "Dưới đây là bảng thống kê tốc độ gia tăng dân số đô thị tại một số thành phố lớn giai đoạn 2010–2024:\n\n| Thành phố         | Dân số (2010) | Dân số (2024) | Tỷ lệ tăng (%) |\n|-------------------|---------------|---------------|-----------------|\n| Hà Nội            | 6.450.000     | 9.080.000     | 40.7%           |\n| TP. Hồ Chí Minh   | 7.890.000     | 10.270.000    | 30.2%           |\n| Đà Nẵng          | 860.000       | 1.230.000     | 43.0%           |\n| Cần Thơ          | 1.050.000     |               |                 |\n\nTỷ lệ tăng dân số đô thị tại Đà Nẵng là 43.0%, cao nhất trong số các thành phố được liệt kê.",
-    "sources": [
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "Đô Thị Hóa.docx",
-      "tieu-thu-dien-nang.md",
-      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-      "Market_Research_Report_3Products_AI Tools.xlsx",
-      "Market_Research_Report_3Products_AI Tools.xlsx",
-      "Market_Research_Report_3Products_AI Tools.xlsx",
-      "file-excelt-test.xlsx"
-    ]
+      "Market_Research_Report_3Products_AI Tools.xlsx"
+    ],
+    "timestamp": "2025-08-15T14:39:34.396496"
   }
 ]

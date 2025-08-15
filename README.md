@@ -1,6 +1,6 @@
-# 🤖 Hybrid RAG Chatbot
+# �� Hybrid RAG Chatbot với Qdrant Cloud
 
-**Hybrid RAG Pipeline với Haystack Core + LangChain Fallback** - Giải pháp tối ưu performance và độ tin cậy cao.
+**Hybrid RAG Pipeline** - Giải pháp tối ưu performance và độ tin cậy cao, tích hợp Qdrant Cloud cho data persistence.
 
 ## 🚀 Tính năng
 
@@ -10,6 +10,8 @@
 - **🎯 Smart Retrieval**: Embedding + Ranking + Diversity
 - **💬 Chat Interface**: UI thân thiện giống ChatGPT
 - **📊 Real-time Stats**: Hiển thị pipeline đang hoạt động
+- **🖼️ Image Support**: Trích xuất và hiển thị ảnh từ tài liệu
+- **☁️ Cloud Storage**: Qdrant Cloud cho data persistence và portability
 
 ## 🏗️ Kiến trúc Hybrid
 
@@ -69,6 +71,12 @@ cd RAG-chatbot
 ```bash
 # Tạo file .env
 OPENAI_API_KEY=your_openai_api_key_here
+
+# Qdrant Cloud Configuration (Optional)
+QDRANT_HOST=your-cluster.qdrant.io
+QDRANT_PORT=6333
+QDRANT_API_KEY=your-api-key
+QDRANT_COLLECTION_NAME=rag_documents
 ```
 
 ### 3. Cài đặt Dependencies
@@ -93,18 +101,81 @@ RAG-chatbot/
 │   ├── hybrid_rag_pipeline.py      # 🎯 Hybrid RAG Pipeline
 │   ├── document_service.py         # Document processing
 │   ├── ingest_service.py           # Document ingestion
-│   └── query_service.py            # Query processing
+│   ├── query_service.py            # Query processing
+│   └── image_database.py           # Image extraction & management
 ├── core/
 │   ├── constants.py                # Constants
 │   └── database.py                 # Database utilities
+├── migrations/                     # 🚀 Migration System
+│   ├── __init__.py                 # Package initialization
+│   ├── base_migration.py           # Base migration class
+│   ├── document_migration.py       # Document migration
+│   ├── image_migration.py          # Image migration
+│   └── migration_manager.py        # Migration manager
 ├── utils/
-│   ├── helpers.py                  # Utility functions
-│   ├── parser.py                   # Document parsing
-│   ├── qdrant_store.py            # Vector store
-│   ├── retrievers.py              # Retrieval components
-│   └── schema.py                  # Data schemas
-└── requirement.txt                # Dependencies
+│   └── helpers.py                  # Utility functions
+├── migrate.py                      # Migration script
+├── requirement.txt                 # Dependencies
+└── README.md                       # This file
 ```
+
+## 🚀 Migration System (Qdrant Cloud)
+
+### **Tại sao cần Migration?**
+
+- **Portability**: Dữ liệu có thể truy cập từ mọi nơi
+- **Scalability**: Không bị giới hạn bởi local storage
+- **Management**: Web dashboard để quản lý dữ liệu
+- **Backup**: Tự động backup và recovery
+
+### **Migration Commands**
+
+```bash
+# Test connections
+python migrate.py --test
+
+# Migrate documents only
+python migrate.py --type documents
+
+# Migrate images only
+python migrate.py --type images
+
+# Migrate all (documents + images)
+python migrate.py --type all
+
+# Cleanup local files after migration
+python migrate.py --type all --cleanup
+
+# Generate migration report
+python migrate.py --report
+```
+
+### **Migration Features**
+
+#### **✅ BaseMigration Class**
+- **Configuration Management**: Tự động load từ .env
+- **Structured Logging**: Với timestamps và levels
+- **Error Handling**: Comprehensive error tracking
+- **Progress Tracking**: Success/failure counting
+- **Validation**: Config validation trước khi migrate
+
+#### **✅ DocumentMigration**
+- **Multi-source Loading**: Từ processed_files.txt và chat_history.json
+- **OpenAI Embeddings**: Sử dụng text-embedding-3-small
+- **Metadata Preservation**: Giữ nguyên metadata gốc
+- **Batch Processing**: Với progress tracking
+
+#### **✅ ImageMigration**
+- **Image Loading**: Từ image_database/image_metadata.json
+- **Base64 Conversion**: Chuyển ảnh thành base64
+- **Context Embedding**: Từ context và keywords
+- **Cleanup Option**: Xóa ảnh local sau migration
+
+#### **✅ MigrationManager**
+- **Centralized Control**: Quản lý tất cả migrations
+- **History Tracking**: Lưu lịch sử migrations
+- **Report Generation**: Báo cáo chi tiết
+- **Connection Testing**: Test Qdrant và OpenAI
 
 ## 🔧 Configuration
 
@@ -127,6 +198,16 @@ processing:
   top_k: 10
 ```
 
+### Qdrant Cloud Configuration
+
+```env
+# .env file
+QDRANT_HOST=your-cluster.qdrant.io
+QDRANT_PORT=6333
+QDRANT_API_KEY=your-api-key
+QDRANT_COLLECTION_NAME=rag_documents
+```
+
 ## 🎮 Sử dụng
 
 ### 1. Upload Documents
@@ -140,12 +221,19 @@ processing:
 - Hỏi câu hỏi về nội dung đã upload
 - Hệ thống trả lời dựa trên context
 - Hiển thị sources tham khảo
+- **🖼️ Hiển thị ảnh liên quan**
 
 ### 3. Monitor Pipeline
 
 - Xem pipeline đang hoạt động (Haystack/LangChain)
 - Theo dõi số lượng documents
 - Kiểm tra performance
+
+### 4. Migration to Cloud
+
+- Migrate dữ liệu lên Qdrant Cloud
+- Quản lý dữ liệu qua web dashboard
+- Backup và recovery tự động
 
 ## 🔄 Hybrid Pipeline Logic
 
@@ -196,6 +284,12 @@ except Exception:
 - **Memory**: 💾💾💾💾 (Good)
 - **Features**: 🎯🎯🎯🎯 (Good)
 
+### **Qdrant Cloud**
+
+- **Storage**: 💾💾💾💾💾 (Unlimited)
+- **Speed**: ⚡⚡⚡⚡⚡ (Very Fast)
+- **Reliability**: 🔒🔒🔒🔒🔒 (High)
+
 ## 🚀 Deployment
 
 ### Local Development
@@ -230,5 +324,55 @@ streamlit run app.py --server.port 8501
 
 - Giảm `chunk_size` trong config
 - Sử dụng ít documents hơn
+
+### **Migration Issues**
+
+```bash
+# Test connections first
+python migrate.py --test
+
+# Check specific migration
+python migrate.py --type documents
+
+# Generate detailed report
+python migrate.py --report
+```
+
+## 📈 Migration Reports
+
+### Migration Report Format
+
+```
+# Migration Report
+Generated: 2024-01-15 14:30:25
+
+## Documents Migration
+- Total: 15
+- Successful: 15
+- Failed: 0
+
+## Images Migration
+- Total: 20
+- Successful: 20
+- Failed: 0
+
+## Recent History
+- 2024-01-15T14:30:25: documents - ✅
+- 2024-01-15T14:35:10: images - ✅
+```
+
+## 🎯 Next Steps
+
+1. **Integrate with RAG Pipeline**: Cập nhật RAG pipeline để sử dụng Qdrant Cloud
+2. **Add Rollback**: Implement rollback functionality
+3. **Incremental Migration**: Support incremental updates
+4. **Monitoring**: Add monitoring và alerting
+
+## 📝 Best Practices
+
+1. **Test First**: Luôn test connections trước khi migrate
+2. **Backup**: Backup dữ liệu local trước khi cleanup
+3. **Monitor**: Theo dõi logs và reports
+4. **Validate**: Kiểm tra dữ liệu trên Qdrant Cloud sau migration
 
 

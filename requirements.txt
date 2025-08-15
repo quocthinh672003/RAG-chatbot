@@ -1,0 +1,35 @@
+# Core Dependencies - Các thư viện cốt lõi
+streamlit>=1.28.0          # Web framework cho UI
+python-dotenv>=1.0.0       # Load environment variables
+openai>=1.3.0              # OpenAI API client
+
+# Vector Database - Cơ sở dữ liệu vector
+qdrant-client>=1.7.0       # Qdrant Cloud vector database
+
+# Haystack RAG Pipeline - Framework RAG chính
+farm-haystack>=1.19.0      # Haystack framework
+sentence-transformers>=2.2.0  # For Haystack rankers
+transformers>=4.35.0,<4.40.0  # For Haystack components (compatible version)
+pydantic<2.0.0             # Compatible with Haystack
+torch>=1.13.0,<2.2.0       # PyTorch for sentence-transformers (compatible version)
+huggingface-hub>=0.16.0,<0.20.0  # Compatible with transformers
+
+# Document Processing - Xử lý tài liệu
+pypdf>=3.17.0              # PDF processing (modern PyPDF2)
+python-docx>=1.1.0         # DOCX processing
+openpyxl>=3.1.0            # Excel processing
+markdown>=3.5.0            # Markdown processing
+pandas>=2.1.0              # Data manipulation
+beautifulsoup4>=4.12.0     # HTML parsing
+
+# Image Extraction Dependencies - Trích xuất ảnh
+PyMuPDF>=1.23.0            # PDF image extraction (fitz)
+Pillow>=10.0.0             # Image processing (PIL)
+
+# Text Processing - Xử lý văn bản
+nltk>=3.8.0                # Natural Language Toolkit
+
+# Utilities - Tiện ích
+requests>=2.31.0           # HTTP requests
+typing-extensions>=4.8.0   # Type hints support
+

@@ -1,6 +1,19 @@
 """
 Image Database Service - Extract REAL images from ALL uploaded files
 Stores actual images extracted from any document type
+
+Mục đích:
+- Trích xuất ảnh từ tất cả các loại file (DOCX, PDF, Excel, PowerPoint, HTML)
+- Lưu trữ ảnh với metadata (context, keywords, source file)
+- Tìm kiếm ảnh liên quan dựa trên query của user
+- Cung cấp API để truy xuất ảnh từ database
+
+Công nghệ sử dụng:
+- python-docx: Trích xuất ảnh từ DOCX
+- PyMuPDF (fitz): Trích xuất ảnh từ PDF
+- zipfile: Trích xuất ảnh từ Excel/PowerPoint (vì là ZIP files)
+- PIL (Pillow): Xử lý và lưu ảnh
+- Unstructured: Trích xuất tổng quát (nếu có)
 """
 
 import os
@@ -10,20 +23,44 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 class ImageDatabase:
-    """Image database service that extracts REAL images from ANY uploaded files"""
+    """
+    Image database service that extracts REAL images from ANY uploaded files
+    
+    Chức năng chính:
+    1. Trích xuất ảnh từ các file tài liệu
+    2. Lưu trữ ảnh với metadata
+    3. Tìm kiếm ảnh liên quan
+    4. Quản lý database ảnh
+    """
     
     def __init__(self):
-        self.images_dir = "image_database"
-        self.metadata_file = os.path.join(self.images_dir, "image_metadata.json")
-        self._ensure_database_exists()
-        self._load_metadata()
+        """
+        Khởi tạo Image Database
+        - Tạo thư mục lưu trữ ảnh
+        - Load metadata từ file JSON
+        - Đảm bảo cấu trúc database tồn tại
+        """
+        self.images_dir = "image_database"  # Thư mục chính lưu ảnh
+        self.metadata_file = os.path.join(self.images_dir, "image_metadata.json")  # File metadata
+        self._ensure_database_exists()  # Tạo cấu trúc thư mục
+        self._load_metadata()  # Load metadata hiện có
     
     def _ensure_database_exists(self):
-        """Create image database directory and structure"""
+        """
+        Tạo cấu trúc thư mục cho image database
+        
+        Cấu trúc:
+        image_database/
+        ├── extracted/     # Ảnh trích xuất từ tài liệu
+        ├── screenshots/   # Screenshot của tài liệu
+        ├── documents/     # Ảnh từ document preview
+        └── general/       # Ảnh tổng quát khác
+        """
+        # Tạo thư mục chính nếu chưa tồn tại
         if not os.path.exists(self.images_dir):
             os.makedirs(self.images_dir)
         
-        # Create subdirectories for different categories
+        # Tạo các thư mục con cho từng loại ảnh
         categories = ["extracted", "screenshots", "documents", "general"]
         for category in categories:
             category_dir = os.path.join(self.images_dir, category)
@@ -51,54 +88,77 @@ class ImageDatabase:
             print(f"Error saving metadata: {e}")
     
     def extract_images_from_any_file(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
-        """Extract REAL images from ANY file type using multiple methods"""
+        """
+        Trích xuất ảnh từ BẤT KỲ loại file nào sử dụng nhiều phương pháp
+        
+        Logic:
+        1. Thử Unstructured library (toàn diện nhất)
+        2. Thử extractor riêng cho từng loại file
+        3. Tạo screenshot nếu không tìm thấy ảnh
+        
+        Args:
+            file_path: Đường dẫn đến file
+            source_filename: Tên file gốc
+            
+        Returns:
+            List[Dict]: Danh sách ảnh đã trích xuất với metadata
+        """
         extracted_images = []
         
-        # Method 1: Try Unstructured library (most comprehensive)
+        # Method 1: Thử Unstructured library (toàn diện nhất)
+        # Unstructured có thể xử lý nhiều loại file và trích xuất ảnh tốt
         unstructured_images = self._extract_with_unstructured(file_path, source_filename)
         if unstructured_images:
             extracted_images.extend(unstructured_images)
             print(f"Unstructured extracted {len(unstructured_images)} images")
         
-        # Method 2: Try specific file type extractors
+        # Method 2: Thử extractor riêng cho từng loại file
+        # Dựa vào extension để chọn phương pháp phù hợp
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.pdf':
+            # PDF: Sử dụng PyMuPDF để trích xuất ảnh embedded
             pdf_images = self._extract_from_pdf(file_path, source_filename)
             extracted_images.extend(pdf_images)
             print(f"PDF extractor found {len(pdf_images)} images")
         
         elif file_ext in ['.docx', '.doc']:
+            # DOCX: Sử dụng python-docx hoặc ZIP extraction
             docx_images = self._extract_from_docx(file_path, source_filename)
             extracted_images.extend(docx_images)
             print(f"DOCX extractor found {len(docx_images)} images")
         
         elif file_ext in ['.xlsx', '.xls']:
+            # Excel: Sử dụng ZIP extraction (Excel là ZIP file)
             excel_images = self._extract_from_excel(file_path, source_filename)
             extracted_images.extend(excel_images)
             print(f"Excel extractor found {len(excel_images)} images")
         
         elif file_ext in ['.pptx', '.ppt']:
+            # PowerPoint: Sử dụng ZIP extraction (PPTX là ZIP file)
             ppt_images = self._extract_from_powerpoint(file_path, source_filename)
             extracted_images.extend(ppt_images)
             print(f"PowerPoint extractor found {len(ppt_images)} images")
         
         elif file_ext in ['.html', '.htm']:
+            # HTML: Sử dụng BeautifulSoup để tìm thẻ img
             html_images = self._extract_from_html(file_path, source_filename)
             extracted_images.extend(html_images)
             print(f"HTML extractor found {len(html_images)} images")
         
-        # Method 3: Create document screenshot as fallback
+        # Method 3: Tạo document screenshot nếu không tìm thấy ảnh
+        # Fallback: Tạo ảnh preview của tài liệu
         if not extracted_images:
             screenshot = self._create_document_screenshot(file_path, source_filename)
             if screenshot:
                 extracted_images.append(screenshot)
                 print("Created document screenshot as fallback")
         
-        # Save all extracted images to database
+        # Lưu tất cả ảnh đã trích xuất vào database
         for img in extracted_images:
             self._save_image_to_database(img)
         
+        # Lưu metadata
         self._save_metadata()
         print(f"Total extracted {len(extracted_images)} images from {source_filename}")
         return extracted_images
@@ -155,72 +215,99 @@ class ImageDatabase:
             return []
     
     def _extract_from_pdf(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
-        """Extract images from PDF using PyMuPDF"""
+        """
+        Trích xuất ảnh từ file PDF sử dụng PyMuPDF (fitz)
+        
+        Logic:
+        1. Mở PDF file với PyMuPDF
+        2. Duyệt qua từng trang
+        3. Tìm ảnh embedded trong mỗi trang
+        4. Trích xuất ảnh và context xung quanh
+        5. Lưu ảnh với metadata
+        
+        Args:
+            file_path: Đường dẫn đến file PDF
+            source_filename: Tên file gốc
+            
+        Returns:
+            List[Dict]: Danh sách ảnh đã trích xuất từ PDF
+        """
         try:
-            import fitz
+            import fitz  # PyMuPDF
         except ImportError:
+            print("PyMuPDF not available - cannot extract PDF images")
             return []
         
         extracted_images = []
         try:
+            # Mở PDF file
             doc = fitz.open(file_path)
             
+            # Duyệt qua từng trang trong PDF
             for page_num in range(len(doc)):
-                page = doc.load_page(page_num)
-                page_text = page.get_text()
+                page = doc.load_page(page_num)  # Load trang
+                page_text = page.get_text()     # Lấy text của trang
                 
-                # Extract embedded images
+                # Tìm danh sách ảnh embedded trong trang
                 image_list = page.get_images()
                 for img_index, img in enumerate(image_list):
                     try:
+                        # Lấy reference ID của ảnh
                         xref = img[0]
+                        # Tạo Pixmap từ ảnh
                         pix = fitz.Pixmap(doc, xref)
                         
-                        if pix.n - pix.alpha < 4:
+                        # Xử lý ảnh dựa trên số kênh màu
+                        if pix.n - pix.alpha < 4:  # Ảnh RGB hoặc Grayscale
                             img_data = pix.tobytes("png")
-                        else:
+                        else:  # Ảnh CMYK hoặc khác, chuyển sang RGB
                             pix1 = fitz.Pixmap(fitz.csRGB, pix)
                             img_data = pix1.tobytes("png")
-                            pix1 = None
+                            pix1 = None  # Giải phóng bộ nhớ
                         
-                        # Get context around image
+                        # Lấy context xung quanh ảnh
                         img_rect = None
                         try:
+                            # Tìm vùng chứa ảnh trên trang
                             img_rect = page.get_image_bbox(img)
                         except:
                             pass
                         
                         context = ""
                         if img_rect:
+                            # Mở rộng vùng để lấy text xung quanh ảnh
                             expanded_rect = img_rect * 1.5
                             context = page.get_text("text", clip=expanded_rect)
                         else:
+                            # Fallback: lấy 500 ký tự đầu của trang
                             context = page_text[:500]
                         
-                        # Save image
+                        # Tạo tên file và đường dẫn lưu ảnh
                         img_filename = f"pdf_{source_filename}_page{page_num+1}_img{img_index+1}.png"
                         img_path = os.path.join(self.images_dir, "extracted", img_filename)
                         
+                        # Lưu ảnh vào file
                         with open(img_path, "wb") as img_file:
                             img_file.write(img_data)
                         
+                        # Thêm metadata cho ảnh
                         extracted_images.append({
                             "path": img_path,
                             "filename": img_filename,
                             "source_file": source_filename,
                             "page": page_num + 1,
                             "type": "pdf_extracted",
-                            "context": context.strip()[:200],
+                            "context": context.strip()[:200],  # Giới hạn context 200 ký tự
                             "keywords": self._extract_keywords_from_context(context)
                         })
                         
-                        pix = None
+                        pix = None  # Giải phóng bộ nhớ
                         
                     except Exception as e:
                         print(f"Error extracting PDF image: {e}")
                         continue
             
-            doc.close()
+            doc.close()  # Đóng PDF file
             
         except Exception as e:
             print(f"Error extracting from PDF: {e}")
@@ -239,6 +326,13 @@ class ImageDatabase:
             # Method 1: Try python-docx
             try:
                 doc = Document(file_path)
+                
+                # Extract all text for context analysis
+                full_text = []
+                for paragraph in doc.paragraphs:
+                    full_text.append(paragraph.text)
+                document_text = "\n".join(full_text)
+                
                 for rel in doc.part.rels.values():
                     if "image" in rel.target_ref:
                         try:
@@ -249,13 +343,16 @@ class ImageDatabase:
                             with open(img_path, "wb") as img_file:
                                 img_file.write(img_data)
                             
+                            # Try to find relevant context for this image
+                            context = self._find_image_context(document_text, len(extracted_images))
+                            
                             extracted_images.append({
                                 "path": img_path,
                                 "filename": img_filename,
                                 "source_file": source_filename,
                                 "type": "docx_extracted",
-                                "context": "Image from DOCX document",
-                                "keywords": []
+                                "context": context,
+                                "keywords": self._extract_keywords_from_context(context)
                             })
                         except Exception as e:
                             print(f"Error extracting DOCX image: {e}")
@@ -484,6 +581,37 @@ class ImageDatabase:
         image_id = f"{img_data['type']}_{len(self.metadata)}"
         self.metadata[image_id] = img_data
     
+    def _find_image_context(self, document_text: str, image_index: int) -> str:
+        """Find relevant context for an image based on document text"""
+        # Look for image-related sections in the document
+        lines = document_text.split('\n')
+        
+        # Common image context patterns
+        image_patterns = [
+            "hình", "ảnh", "image", "figure", "photo", "bức ảnh", "hình ảnh",
+            "giao thông", "đường", "xe", "ô tô", "xe máy", "đông đúc", "hà nội",
+            "nông nghiệp", "nông dân", "ruộng", "cây", "tưới", "đồng ruộng"
+        ]
+        
+        # Find lines that might contain image context
+        relevant_lines = []
+        for i, line in enumerate(lines):
+            line_lower = line.lower()
+            if any(pattern in line_lower for pattern in image_patterns):
+                # Get surrounding context (previous and next lines)
+                start = max(0, i-2)
+                end = min(len(lines), i+3)
+                context_block = lines[start:end]
+                relevant_lines.extend(context_block)
+        
+        if relevant_lines:
+            # Return the most relevant context for this image
+            context = "\n".join(relevant_lines[:5])  # Limit to 5 lines
+            return context.strip()
+        
+        # Fallback: return a section of the document
+        return document_text[:500] + "..." if len(document_text) > 500 else document_text
+
     def _extract_keywords_from_context(self, context: str) -> List[str]:
         """Extract relevant keywords from image context"""
         context_lower = context.lower()
@@ -504,31 +632,62 @@ class ImageDatabase:
         return keywords
     
     def find_relevant_images(self, query: str, max_results: int = 3) -> List[Dict[str, Any]]:
-        """Find relevant images based on query and context"""
-        query_lower = query.lower()
+        """
+        Tìm ảnh liên quan dựa trên query và context
+        
+        Logic tính điểm:
+        1. Context matches: +2 điểm cho mỗi từ khớp trong context
+        2. Keyword matches: +3 điểm cho mỗi keyword khớp
+        3. Source file relevance: +1 điểm nếu tên file liên quan
+        4. General image queries: +5 điểm nếu query hỏi về ảnh nói chung
+        
+        Args:
+            query: Câu hỏi của user (đã chuyển thành lowercase)
+            max_results: Số lượng ảnh tối đa trả về
+            
+        Returns:
+            List[Dict]: Danh sách ảnh liên quan, sắp xếp theo điểm số
+        """
+        query_lower = query.lower()  # Chuyển query thành lowercase để so sánh
         relevant_images = []
         
+        # Check if this is a general image query
+        general_image_keywords = ["hình", "ảnh", "image", "picture", "photo", "có ko", "gì"]
+        is_general_image_query = any(keyword in query_lower for keyword in general_image_keywords)
+        
+        # Duyệt qua tất cả ảnh trong metadata
         for image_id, image_data in self.metadata.items():
-            score = 0
-            context = image_data.get("context", "").lower()
-            keywords = image_data.get("keywords", [])
+            score = 0  # Điểm số của ảnh này
+            context = image_data.get("context", "").lower()  # Context của ảnh
+            keywords = image_data.get("keywords", [])        # Keywords của ảnh
             
-            # Score based on context matches
-            for word in query_lower.split():
-                if len(word) > 2 and word in context:
-                    score += 2
-            
-            # Score based on keyword matches
-            for keyword in keywords:
-                if keyword.lower() in query_lower:
+            # Nếu là câu hỏi chung về ảnh, ưu tiên ảnh có context rõ ràng
+            if is_general_image_query:
+                if context and len(context) > 10:  # Có context mô tả
+                    score += 5
+                if keywords:  # Có keywords
                     score += 3
             
-            # Score based on source file relevance
+            # Tính điểm dựa trên context matches
+            # Tách query thành các từ và kiểm tra trong context
+            for word in query_lower.split():
+                if len(word) > 2 and word in context:  # Chỉ xét từ có >2 ký tự
+                    score += 2  # +2 điểm cho mỗi từ khớp
+            
+            # Tính điểm dựa trên keyword matches
+            # Keywords được trích xuất từ context, có trọng số cao hơn
+            for keyword in keywords:
+                if keyword.lower() in query_lower:
+                    score += 3  # +3 điểm cho mỗi keyword khớp
+            
+            # Tính điểm dựa trên tên file nguồn
+            # Nếu tên file chứa từ khóa trong query
             source_file = image_data.get("source_file", "").lower()
             if any(word in source_file for word in query_lower.split()):
-                score += 1
+                score += 1  # +1 điểm nếu tên file liên quan
             
-            if score > 0:
+            # Thêm tất cả ảnh có điểm > 0 hoặc là câu hỏi chung về ảnh
+            if score > 0 or is_general_image_query:
                 relevant_images.append({
                     "id": image_id,
                     "score": score,
@@ -539,7 +698,7 @@ class ImageDatabase:
                     "type": image_data.get("type", "")
                 })
         
-        # Sort by score and return top results
+        # Sắp xếp theo điểm số giảm dần và trả về top results
         relevant_images.sort(key=lambda x: x["score"], reverse=True)
         return relevant_images[:max_results]
     

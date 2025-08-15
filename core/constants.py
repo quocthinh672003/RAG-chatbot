@@ -1,40 +1,53 @@
 """
 Constants for RAG Chatbot
+
+Mục đích:
+- Định nghĩa các hằng số và cấu hình mặc định cho RAG chatbot
+- Quản lý file types được hỗ trợ
+- Cấu hình processing parameters
+- Định nghĩa model names và error messages
+
+Các nhóm constants:
+1. File Types: Các định dạng file được hỗ trợ
+2. Processing Settings: Chunk size, overlap, top-k
+3. Embedding Settings: Dimensions và model names
+4. Database Settings: Host, port, collection name
+5. Error Messages: Các thông báo lỗi tiếng Việt
 """
 
-# File types supported
+# File types supported - Các định dạng file được hỗ trợ
 SUPPORTED_FILE_TYPES = [
-    "pdf",
-    "docx",
-    "txt",
-    "md",
-    "markdown",
-    "xlsx",
-    "xls",
-    "pptx",
-    "html",
-    "htm",
-    "json",
-    "csv",
+    "pdf",      # Portable Document Format
+    "docx",     # Microsoft Word Document
+    "txt",      # Plain Text File
+    "md",       # Markdown File
+    "markdown", # Markdown File (alternative extension)
+    "xlsx",     # Microsoft Excel Spreadsheet
+    "xls",      # Microsoft Excel (legacy)
+    "pptx",     # Microsoft PowerPoint Presentation
+    "html",     # HyperText Markup Language
+    "htm",      # HTML (alternative extension)
+    "json",     # JavaScript Object Notation
+    "csv",      # Comma-Separated Values
 ]
 
-# Default processing settings
-DEFAULT_CHUNK_SIZE = 1000
-DEFAULT_CHUNK_OVERLAP = 100
-DEFAULT_TOP_K = 10
+# Default processing settings - Cấu hình xử lý mặc định
+DEFAULT_CHUNK_SIZE = 2000      # Kích thước mỗi chunk (số ký tự) - nhỏ hơn để không cắt giữa đoạn
+DEFAULT_CHUNK_OVERLAP = 400    # Số ký tự overlap giữa các chunk
+DEFAULT_TOP_K = 50             # Số lượng documents top-k để retrieve - tăng để có nhiều context
 
-# Embedding dimensions
-OPENAI_EMBEDDING_DIM = 1536
-LOCAL_EMBEDDING_DIM = 384
+# Embedding dimensions - Kích thước vector embedding
+OPENAI_EMBEDDING_DIM = 1536    # OpenAI embedding dimension (text-embedding-3-small)
+LOCAL_EMBEDDING_DIM = 384      # Local embedding dimension (sentence-transformers)
 
 # Database settings
 DEFAULT_DB_HOST = "localhost"
 DEFAULT_DB_PORT = 6333
 DEFAULT_COLLECTION_NAME = "rag_document"
 
-# Model names
-DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
-DEFAULT_LLM_MODEL = "gpt-4o-mini"
+# Model names - Tên các model được sử dụng
+DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"  # OpenAI embedding model
+DEFAULT_LLM_MODEL = "gpt-4o-mini"                   # OpenAI LLM model
 
 # Processing separators
 TEXT_SPLITTER_SEPARATORS = ["\n\n", "\n", " ", ""]
