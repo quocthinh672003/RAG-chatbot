@@ -17,28 +17,30 @@ Các nhóm constants:
 
 # File types supported - Các định dạng file được hỗ trợ
 SUPPORTED_FILE_TYPES = [
-    "pdf",      # Portable Document Format
-    "docx",     # Microsoft Word Document
-    "txt",      # Plain Text File
-    "md",       # Markdown File
-    "markdown", # Markdown File (alternative extension)
-    "xlsx",     # Microsoft Excel Spreadsheet
-    "xls",      # Microsoft Excel (legacy)
-    "pptx",     # Microsoft PowerPoint Presentation
-    "html",     # HyperText Markup Language
-    "htm",      # HTML (alternative extension)
-    "json",     # JavaScript Object Notation
-    "csv",      # Comma-Separated Values
+    "pdf",  # Portable Document Format
+    "docx",  # Microsoft Word Document
+    "txt",  # Plain Text File
+    "md",  # Markdown File
+    "markdown",  # Markdown File (alternative extension)
+    "xlsx",  # Microsoft Excel Spreadsheet
+    "xls",  # Microsoft Excel (legacy)
+    "pptx",  # Microsoft PowerPoint Presentation
+    "html",  # HyperText Markup Language
+    "htm",  # HTML (alternative extension)
+    "json",  # JavaScript Object Notation
+    "csv",  # Comma-Separated Values
 ]
 
 # Default processing settings - Cấu hình xử lý mặc định
-DEFAULT_CHUNK_SIZE = 2000      # Kích thước mỗi chunk (số ký tự) - nhỏ hơn để không cắt giữa đoạn
-DEFAULT_CHUNK_OVERLAP = 400    # Số ký tự overlap giữa các chunk
-DEFAULT_TOP_K = 50             # Số lượng documents top-k để retrieve - tăng để có nhiều context
+DEFAULT_CHUNK_SIZE = (
+    5000  # Kích thước mỗi chunk (số ký tự) - tăng để giữ nguyên cấu trúc JD
+)
+DEFAULT_CHUNK_OVERLAP = 1000  # Số ký tự overlap giữa các chunk
+DEFAULT_TOP_K = 10  # Số lượng documents top-k để retrieve - giảm để tập trung
 
 # Embedding dimensions - Kích thước vector embedding
-OPENAI_EMBEDDING_DIM = 1536    # OpenAI embedding dimension (text-embedding-3-small)
-LOCAL_EMBEDDING_DIM = 384      # Local embedding dimension (sentence-transformers)
+OPENAI_EMBEDDING_DIM = 1536  # OpenAI embedding dimension (text-embedding-3-small)
+LOCAL_EMBEDDING_DIM = 384  # Local embedding dimension (sentence-transformers)
 
 # Database settings
 DEFAULT_DB_HOST = "localhost"
@@ -47,7 +49,15 @@ DEFAULT_COLLECTION_NAME = "rag_document"
 
 # Model names - Tên các model được sử dụng
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"  # OpenAI embedding model
-DEFAULT_LLM_MODEL = "gpt-4o-mini"                   # OpenAI LLM model
+DEFAULT_LLM_MODEL = "gpt-4o-mini"  # OpenAI LLM model
+
+# Alternative embedding models
+LOCAL_EMBEDDING_MODELS = {
+    "sentence-transformers": "all-MiniLM-L6-v2",  # Fast, 384 dimensions
+    "multilingual": "paraphrase-multilingual-MiniLM-L12-v2",  # Multilingual support
+    "bge": "BAAI/bge-small-en-v1.5",  # High quality, English
+    "bge-multilingual": "BAAI/bge-small-zh-v1.5",  # Multilingual BGE
+}
 
 # Processing separators
 TEXT_SPLITTER_SEPARATORS = ["\n\n", "\n", " ", ""]

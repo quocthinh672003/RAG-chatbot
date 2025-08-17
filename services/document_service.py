@@ -45,6 +45,126 @@ except ImportError:
     pd = None
 
 from config import config
+from utils.helpers import create_metadata
+
+
+class DocumentProcessor:
+    """Hybrid document processor with Haystack + LangChain fallback"""
+
+    def __init__(self):
+        self.use_haystack = HAYSTACK_AVAILABLE
+        self.use_langchain = not HAYSTACK_AVAILABLE and LANGCHAIN_AVAILABLE
+        
+        if self.use_haystack:
+            self._init_haystack()
+        elif self.use_langchain:
+            self._init_langchain()
+        else:
+            raise ImportError("Neither Haystack nor LangChain available")
+
+    def _init_haystack(self):
+        """Initialize Haystack converters"""
+        self.pdf_converter = PDFToTextConverter()
+        self.docx_converter = DocxToTextConverter()
+        self.text_converter = TextConverter()
+        
+        self.preprocessor = PreProcessor(
+            clean_empty_lines=True,
+            clean_whitespace=True,
+            clean_header_footer=True,
+            split_by="sentence",
+            split_length=config.processing.chunk_size,
+            split_overlap=config.processing.chunk_overlap,
+        )
+
+    def _init_langchain(self):
+        """Initialize LangChain components"""
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=config.processing.chunk_size,
+            chunk_overlap=config.processing.chunk_overlap,
+            length_function=len
+        )
+
+    def _get_haystack_converter(self, file_path: str):
+        """Get appropriate Haystack converter"""
+        ext = os.path.splitext(file_path)[1].lower()
+        
+        if ext == '.pdf':
+            return self.pdf_converter
+        elif ext == '.docx':
+            return self.docx_converter
+        else:
+            return self.text_converter
+
+    def _get_langchain_loader(self, file_path: str):
+        """Get appropriate LangChain loader"""
+        ext = os.path.splitext(file_path)[1].lower()
+        
+        if ext == '.pdf':
+            return PyPDFLoader(file_path)
+        elif ext == '.docx':
+            return Docx2txtLoader(file_path)
+        else:
+            return TextLoader(file_path)
+
+    def process(self, file_path: str) -> List:
+        """Process document from file path"""
+        try:
+            if self.use_haystack:
+                return self._process_haystack(file_path)
+            elif self.use_langchain:
+                return self._process_langchain(file_path)
+        except Exception as e:
+            print(f"❌ Error processing {file_path}: {e}")
+            return []
+
+    def _process_haystack(self, file_path: str) -> List:
+        """Process with Haystack"""
+        converter = self._get_haystack_converter(file_path)
+        documents = converter.convert(file_path)
+        
+        if not documents:
+            print(f"⚠️ No documents extracted from {file_path}")
+            return []
+        
+        # Add metadata
+        metadata = create_metadata(file_path)
+        for doc in documents:
+            doc.meta.update(metadata)
+        
+        # Preprocess documents
+        processed_docs = self.preprocessor.process(documents)
+        print(f"✅ Processed {len(processed_docs)} chunks from {file_path} (Haystack)")
+        return processed_docs
+
+    def _process_langchain(self, file_path: str) -> List:
+        """Process with LangChain"""
+        print(f"🔍 Processing {file_path} with LangChain...")
+        
+        loader = self._get_langchain_loader(file_path)
+        documents = loader.load()
+        
+        print(f"📄 Loaded {len(documents)} documents from {file_path}")
+        
+        if not documents:
+            print(f"⚠️ No documents extracted from {file_path}")
+            return []
+        
+        # Add metadata
+        metadata = create_metadata(file_path)
+        for doc in documents:
+            doc.metadata.update(metadata)
+        
+        # Split documents
+        split_docs = self.text_splitter.split_documents(documents)
+        print(f"✅ Processed {len(split_docs)} chunks from {file_path} (LangChain)")
+        
+        # Debug: show first chunk content
+        if split_docs:
+            first_chunk = split_docs[0].page_content[:200] + "..." if len(split_docs[0].page_content) > 200 else split_docs[0].page_content
+            print(f"📝 First chunk preview: {first_chunk}")
+        
+        return split_docs
 
 
 class DocumentService:
@@ -121,21 +241,8 @@ class DocumentService:
 
     def _save_json_structure(self, document_structure: Dict[str, Any], document_id: str) -> None:
         """Save complete JSON structure to file for persistence"""
-        try:
-            # Create JSON storage directory
-            json_dir = "json_storage"
-            if not os.path.exists(json_dir):
-                os.makedirs(json_dir)
-            
-            # Save complete structure
-            json_file_path = os.path.join(json_dir, f"{document_id}_structure.json")
-            with open(json_file_path, 'w', encoding='utf-8') as f:
-                json.dump(document_structure, f, ensure_ascii=False, indent=2)
-            
-            logger.info(f"💾 Saved JSON structure to {json_file_path}")
-            
-        except Exception as e:
-            logger.error(f"❌ Error saving JSON structure: {e}")
+        # Completely disabled JSON storage to prevent spam
+        pass
 
     def get_json_structure(self, document_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve complete JSON structure from file"""

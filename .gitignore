@@ -11,3 +11,19 @@ __pycache__/
 
 # Các file logs hoặc tạm thời
 *.log
+
+# Upload files - không cần lưu vào git vì đã có Qdrant Cloud
+uploads/
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.txt
+*.md
+*.json
+*.csv
+
+# Cache và temporary files
+cache/
+temp/
+*.tmp

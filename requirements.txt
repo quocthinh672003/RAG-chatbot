@@ -1,35 +1,201 @@
-# Core Dependencies - Các thư viện cốt lõi
-streamlit>=1.28.0          # Web framework cho UI
-python-dotenv>=1.0.0       # Load environment variables
-openai>=1.3.0              # OpenAI API client
+# =============================================================================
+# 🤖 Hybrid RAG Chatbot - Requirements.txt
+# =============================================================================
+# 
+# 📋 Mô tả: Dependencies cho Hybrid RAG Chatbot với Haystack + LangChain Fallback
+# 🎯 Mục đích: Xử lý tài liệu đa định dạng, RAG pipeline, và UI tương tác
+# 🔧 Architecture: Hybrid approach với auto-fallback cho reliability cao
+# 
+# =============================================================================
 
-# Vector Database - Cơ sở dữ liệu vector
-qdrant-client>=1.7.0       # Qdrant Cloud vector database
+# =============================================================================
+# 🚀 CORE DEPENDENCIES - Các thư viện cốt lõi
+# =============================================================================
 
-# Haystack RAG Pipeline - Framework RAG chính
-farm-haystack>=1.19.0      # Haystack framework
-sentence-transformers>=2.2.0  # For Haystack rankers
-transformers>=4.35.0,<4.40.0  # For Haystack components (compatible version)
-pydantic<2.0.0             # Compatible with Haystack
-torch>=1.13.0,<2.2.0       # PyTorch for sentence-transformers (compatible version)
-huggingface-hub>=0.16.0,<0.20.0  # Compatible with transformers
+streamlit>=1.28.0          # 🌐 Web framework cho UI tương tác
+                          # - Chat interface giống ChatGPT
+                          # - File upload với drag & drop
+                          # - Real-time updates và caching
+                          # - Session state management
 
-# Document Processing - Xử lý tài liệu
-pypdf>=3.17.0              # PDF processing (modern PyPDF2)
-python-docx>=1.1.0         # DOCX processing
-openpyxl>=3.1.0            # Excel processing
-markdown>=3.5.0            # Markdown processing
-pandas>=2.1.0              # Data manipulation
-beautifulsoup4>=4.12.0     # HTML parsing
+python-dotenv>=1.0.0       # 🔐 Load environment variables từ .env file
+                          # - API keys management
+                          # - Configuration loading
+                          # - Security best practices
 
-# Image Extraction Dependencies - Trích xuất ảnh
-PyMuPDF>=1.23.0            # PDF image extraction (fitz)
-Pillow>=10.0.0             # Image processing (PIL)
+openai>=1.3.0              # 🤖 OpenAI API client cho LLM và embeddings
+                          # - GPT-4o-mini cho text generation
+                          # - text-embedding-3-small cho vector embeddings
+                          # - Async support và error handling
 
-# Text Processing - Xử lý văn bản
-nltk>=3.8.0                # Natural Language Toolkit
+# =============================================================================
+# 🗄️ VECTOR DATABASE - Cơ sở dữ liệu vector
+# =============================================================================
 
-# Utilities - Tiện ích
-requests>=2.31.0           # HTTP requests
-typing-extensions>=4.8.0   # Type hints support
+qdrant-client>=1.7.0       # ☁️ Qdrant Cloud vector database client
+                          # - Cloud-based vector storage
+                          # - High-performance similarity search
+                          # - Metadata filtering và management
+                          # - Scalable và reliable
+
+# =============================================================================
+# 🎯 HAYSTACK RAG PIPELINE - Framework RAG chính
+# =============================================================================
+
+farm-haystack>=1.19.0      # 🏗️ Haystack framework cho RAG pipeline
+                          # - Document processing pipeline
+                          # - EmbeddingRetriever với OpenAI
+                          # - SentenceTransformersRanker
+                          # - LostInTheMiddleRanker
+                          # - PromptNode cho LLM integration
+
+sentence-transformers>=2.2.0  # 🧠 Sentence transformers cho ranking
+                             # - Multi-lingual support (Vietnamese)
+                             # - Semantic similarity scoring
+                             # - Fast inference với GPU support
+
+transformers>=4.35.0,<4.40.0  # 🔄 Hugging Face transformers
+                             # - Compatible với Haystack
+                             # - Model loading và caching
+                             # - Tokenization và preprocessing
+
+pydantic<2.0.0             # 📊 Data validation cho Haystack compatibility
+                          # - Schema validation
+                          # - Type checking
+                          # - Configuration management
+
+torch>=1.13.0,<2.2.0       # 🔥 PyTorch cho deep learning
+                          # - Compatible với sentence-transformers
+                          # - GPU acceleration support
+                          # - Memory efficient operations
+
+huggingface-hub>=0.16.0,<0.20.0  # 🌐 Hugging Face model hub
+                                # - Model downloading và caching
+                                # - Compatible với transformers
+                                # - Version management
+
+# =============================================================================
+# 📄 DOCUMENT PROCESSING - Xử lý tài liệu đa định dạng
+# =============================================================================
+
+pypdf>=3.17.0              # 📄 PDF processing (modern PyPDF2 replacement)
+                          # - Text extraction từ PDF
+                          # - Metadata extraction
+                          # - Password-protected PDF support
+                          # - Better performance và reliability
+
+python-docx>=1.1.0         # 📝 DOCX processing
+                          # - Microsoft Word document parsing
+                          # - Text và formatting extraction
+                          # - Table và image support
+                          # - Cross-platform compatibility
+
+openpyxl>=3.1.0            # 📊 Excel processing
+                          # - XLSX/XLS file reading
+                          # - Multiple sheet support
+                          # - Cell formatting preservation
+                          # - Large file handling
+
+markdown>=3.5.0            # 📋 Markdown processing
+                          # - MD file parsing
+                          # - HTML conversion
+                          # - Code block handling
+                          # - Link và image processing
+
+pandas>=2.1.0              # 📈 Data manipulation
+                          # - CSV file processing
+                          # - Data cleaning và transformation
+                          # - Statistical analysis
+                          # - Export capabilities
+
+beautifulsoup4>=4.12.0     # 🌐 HTML parsing
+                          # - HTML/HTM file processing
+                          # - Web scraping support
+                          # - Tag extraction
+                          # - Clean text output
+
+# =============================================================================
+# 🖼️ IMAGE EXTRACTION DEPENDENCIES - Trích xuất ảnh từ tài liệu
+# =============================================================================
+
+PyMuPDF>=1.23.0            # 📄 PDF image extraction (fitz)
+                          # - High-quality image extraction
+                          # - Multiple image formats support
+                          # - OCR capabilities (với tesseract)
+                          # - Fast processing
+
+Pillow>=10.0.0             # 🖼️ Image processing (PIL)
+                          # - Image format conversion
+                          # - Resizing và optimization
+                          # - Metadata extraction
+                          # - Base64 encoding
+
+# =============================================================================
+# 📝 TEXT PROCESSING - Xử lý văn bản tự nhiên
+# =============================================================================
+
+nltk>=3.8.0                # 🧠 Natural Language Toolkit
+                          # - Text tokenization
+                          # - Sentence splitting
+                          # - Stop words removal
+                          # - Named entity recognition
+                          # - Vietnamese language support
+
+# =============================================================================
+# 🔧 UTILITIES - Tiện ích và helper functions
+# =============================================================================
+
+requests>=2.31.0           # 🌐 HTTP requests
+                          # - API calls
+                          # - File downloading
+                          # - Error handling
+                          # - Session management
+
+typing-extensions>=4.8.0   # 📝 Type hints support
+                          # - Advanced type annotations
+                          # - Backward compatibility
+                          # - IDE support
+                          # - Code documentation
+
+# =============================================================================
+# 📋 OPTIONAL DEPENDENCIES - Tùy chọn cho tính năng nâng cao
+# =============================================================================
+
+# Uncomment nếu cần OCR support:
+# tesseract-ocr>=0.3.10    # 🔍 OCR cho image text extraction
+#                          # - Text recognition từ images
+#                          # - Multi-language support
+#                          # - High accuracy với training
+
+# Uncomment nếu cần advanced NLP:
+# spacy>=3.7.0             # 🧠 Advanced NLP processing
+#                          # - Named entity recognition
+#                          # - Dependency parsing
+#                          # - Custom pipeline support
+
+# =============================================================================
+# 🚀 INSTALLATION COMMANDS
+# =============================================================================
+#
+# Cài đặt cơ bản:
+# pip install -r requirements.txt
+#
+# Cài đặt với GPU support (nếu có CUDA):
+# pip install -r requirements.txt
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+#
+# Cài đặt development dependencies:
+# pip install -r requirements.txt
+# pip install black flake8 pytest
+#
+# =============================================================================
+# 📊 VERSION COMPATIBILITY
+# =============================================================================
+#
+# Python: >=3.8, <3.12
+# CUDA: 11.8+ (optional, for GPU acceleration)
+# Memory: >=8GB RAM (recommended)
+# Storage: >=2GB free space
+#
+# =============================================================================
 

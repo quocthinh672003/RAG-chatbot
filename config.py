@@ -9,6 +9,13 @@ from dataclasses import dataclass, field
 from dotenv import load_dotenv
 from core.constants import *
 
+# Set pydantic config to allow arbitrary types
+os.environ["PYDANTIC_ARBITRARY_TYPES_ALLOWED"] = "true"
+os.environ["PYDANTIC_IGNORE_UNKNOWN"] = "true"
+
+# Disable pandas to avoid pydantic conflicts
+os.environ["PYDANTIC_DISABLE_PANDAS"] = "true"
+
 # Load environment variables
 load_dotenv()
 
@@ -33,10 +40,11 @@ class DatabaseConfig:
                 "QDRANT_COLLECTION_NAME", DEFAULT_COLLECTION_NAME
             ),
             api_key=os.getenv("QDRANT_API_KEY"),
-            qdrant_url=os.getenv("QDRANT_URL") or f"https://{os.getenv('QDRANT_HOST', '')}",
+            qdrant_url=os.getenv("QDRANT_URL")
+            or f"https://{os.getenv('QDRANT_HOST', '')}",
             qdrant_api_key=os.getenv("QDRANT_API_KEY"),
         )
-    
+
     def validate(self) -> bool:
         """Validate database configuration"""
         if not self.host:
@@ -67,7 +75,7 @@ class ModelConfig:
             temperature=float(os.getenv("TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("MAX_TOKENS", "1000")),
         )
-    
+
     def validate(self) -> bool:
         """Validate model configuration"""
         if not self.embedding_model:
@@ -97,7 +105,7 @@ class ProcessingConfig:
             top_k=int(os.getenv("TOP_K", str(DEFAULT_TOP_K))),
             max_file_size=int(os.getenv("MAX_FILE_SIZE", str(50 * 1024 * 1024))),
         )
-    
+
     def validate(self) -> bool:
         """Validate processing configuration"""
         if self.chunk_size <= 0:
@@ -128,7 +136,7 @@ class AppConfig:
             debug_mode=os.getenv("DEBUG_MODE", "false").lower() == "true",
             session_timeout=int(os.getenv("SESSION_TIMEOUT", "3600")),
         )
-    
+
     def validate(self) -> bool:
         """Validate app configuration"""
         if not os.path.exists(self.upload_dir):
@@ -141,7 +149,9 @@ class ImageConfig:
     """Image processing configuration"""
 
     max_image_size: int = 10 * 1024 * 1024  # 10MB
-    supported_formats: list = field(default_factory=lambda: ["png", "jpg", "jpeg", "gif", "bmp"])
+    supported_formats: list = field(
+        default_factory=lambda: ["png", "jpg", "jpeg", "gif", "bmp"]
+    )
     quality: int = 85
     max_width: int = 1920
     max_height: int = 1080
@@ -154,7 +164,7 @@ class ImageConfig:
             max_width=int(os.getenv("MAX_IMAGE_WIDTH", "1920")),
             max_height=int(os.getenv("MAX_IMAGE_HEIGHT", "1080")),
         )
-    
+
     def validate(self) -> bool:
         """Validate image configuration"""
         if self.max_image_size <= 0:
