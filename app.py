@@ -158,6 +158,53 @@ def save_chat_history(chat_history: List[Dict[str, Any]]) -> None:
         logger.error(f"❌ Error saving chat history: {e}")
 
 
+def restore_chat_from_weaviate(rag_pipeline) -> int:
+    """Load chats from Weaviate 'Chats' collection into session and persist to file."""
+    try:
+        if not hasattr(rag_pipeline, "document_store"):
+            return 0
+        store = rag_pipeline.document_store
+        if not hasattr(store, "client"):
+            return 0
+        coll = store.client.collections.get("Chats")
+        rows: List[Dict[str, Any]] = []
+        for obj in coll.iterator():
+            props = getattr(obj, "properties", {}) or {}
+            rows.append({
+                "question": props.get("question", ""),
+                "answer": props.get("answer", ""),
+                "sources": props.get("sources", "").split(", ") if props.get("sources") else [],
+                "timestamp": props.get("timestamp", ""),
+            })
+        rows.sort(key=lambda r: r.get("timestamp", ""))
+        st.session_state.chat_history = rows
+        save_chat_history(rows)
+        return len(rows)
+    except Exception as e:
+        logger.error(f"❌ Restore chats from Weaviate failed: {e}")
+        return 0
+
+
+def clear_weaviate_chats(rag_pipeline) -> bool:
+    """Delete Chats collection on Weaviate and recreate empty one."""
+    try:
+        if not hasattr(rag_pipeline, "document_store"):
+            return False
+        store = rag_pipeline.document_store
+        if not hasattr(store, "client"):
+            return False
+        try:
+            store.client.collections.delete("Chats")
+        except Exception:
+            pass
+        if hasattr(store, "_ensure_collection"):
+            store._ensure_collection()
+        return True
+    except Exception as e:
+        logger.error(f"❌ Clear Weaviate chats failed: {e}")
+        return False
+
+
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_uploaded_files() -> List[str]:
     """
@@ -185,51 +232,9 @@ def get_uploaded_files() -> List[str]:
 
 def auto_reload_documents(rag_pipeline, image_database):
     """Auto-reload documents from uploads folder with minimal logging"""
-    if not os.path.exists(UPLOADS_DIR):
-        return
-
-    files = [
-        f
-        for f in os.listdir(UPLOADS_DIR)
-        if os.path.isfile(os.path.join(UPLOADS_DIR, f))
-    ]
-
-    if not files:
-        return
-
-    # Suppress ALL detailed logging
-    import logging
-
-    original_level = logging.getLogger().level
-    logging.getLogger().setLevel(logging.CRITICAL)  # Only critical errors
-
-    try:
-        for file_name in files:
-            file_path = os.path.join(UPLOADS_DIR, file_name)
-
-            # Process document silently
-            documents = DocumentService().convert_file(file_path)
-            if documents and rag_pipeline and hasattr(rag_pipeline, "add_documents"):
-                rag_pipeline.add_documents(documents)
-
-                # Extract images silently
-                try:
-                    image_database.extract_images_from_any_file(file_path, file_name)
-                except:
-                    pass  # Silently ignore image extraction errors
-
-                # Update session state
-                if "processed_files" not in st.session_state:
-                    st.session_state.processed_files = []
-                if file_name not in st.session_state.processed_files:
-                    st.session_state.processed_files.append(file_name)
-
-        # Only show final success message
-        logger.info(f"✅ Loaded {len(files)} documents")
-
-    finally:
-        # Restore logging level
-        logging.getLogger().setLevel(original_level)
+    # DISABLED: This function is disabled to prevent infinite loops
+    # Documents are now loaded manually in main()
+    pass
 
 
 @st.cache_resource
@@ -268,39 +273,7 @@ def debug_session_state():
             logger.info("📁 Uploads directory is empty")
 
 
-def test_text_processing():
-    """
-    🔍 Test text processing functions directly
-    """
-    from services.rag_pipeline import TextProcessor
 
-    test_query = "OKVIP - TUYỂN DỤNG IT DEV"
-    test_content = "OKVIP - TUYỂN DỤNG IT DEV (APP DEVELOPER) MÔ TẢ CÔNG VIỆC: THAM GIA PHÁT TRIỂN VÀ BẢO TRÌ ỨNG DỤNG DI ĐỘNG"
-
-    st.write("🔍 Text Processing Test:")
-    st.write(f"Original query: '{test_query}'")
-    st.write(f"Original content: '{test_content}'")
-
-    # Test normalization
-    normalized_query = TextProcessor.normalize_text(test_query)
-    normalized_content = TextProcessor.normalize_text(test_content)
-
-    st.write(f"Normalized query: '{normalized_query}'")
-    st.write(f"Normalized content: '{normalized_content}'")
-
-    # Test search variations
-    variations = TextProcessor.create_search_variations(test_query)
-    st.write(f"Search variations: {variations}")
-
-    # Test matching
-    matches = []
-    for variation in variations:
-        if variation in normalized_content:
-            matches.append(variation)
-
-    st.write(f"Matches found: {matches}")
-
-    return matches
 
 
 def main():
@@ -352,11 +325,23 @@ def main():
     # Debug session state
     debug_session_state()
 
-    # Auto-reload documents if not already done
+    # DISABLED: Auto-reload documents to prevent infinite loop
+    # Only set flag to prevent future calls
     if not st.session_state.get("auto_reloaded", False):
-        if rag_pipeline:
-            auto_reload_documents(rag_pipeline, image_database)
         st.session_state.auto_reloaded = True
+        
+    # MANUAL: Load documents only once when needed
+    if not st.session_state.get("processed_files") and os.path.exists(UPLOADS_DIR):
+        files = [f for f in os.listdir(UPLOADS_DIR) if os.path.isfile(os.path.join(UPLOADS_DIR, f))]
+        if files and not st.session_state.get("_manual_loaded", False):
+            st.session_state._manual_loaded = True
+            # Load documents manually without auto-reload
+            if "processed_files" not in st.session_state:
+                st.session_state.processed_files = []
+            
+            for file_name in files:
+                if file_name not in st.session_state.processed_files:
+                    st.session_state.processed_files.append(file_name)
 
     # Display files in sidebar (no logging needed)
     if st.session_state.get("processed_files"):
@@ -424,7 +409,7 @@ def main():
                         key="show_more_files",
                     ):
                         st.session_state.show_all_files = True
-                        st.rerun()
+                        st.experimental_rerun()
 
                 # Show all files if requested
                 if st.session_state.get("show_all_files", False):
@@ -443,14 +428,14 @@ def main():
 
                     if st.button("📋 Thu gọn", key="collapse_files"):
                         st.session_state.show_all_files = False
-                        st.rerun()
+                        st.experimental_rerun()
         else:
             st.write("📄 No files uploaded")
 
         # Add new file button
         if st.button("📁 Thêm file mới", type="primary"):
             st.session_state.force_show_upload = True
-            st.rerun()
+            st.experimental_rerun()
 
         # Delete all files button
         if st.session_state.get("processed_files"):
@@ -475,111 +460,17 @@ def main():
                 st.session_state.auto_reloaded = False
 
                 st.success("✅ Đã xóa hết files!")
-                st.rerun()
+                st.experimental_rerun()
 
         # Clear chat button
-        if st.session_state.get("chat_history"):
-            if st.button("🗑️ Xóa lịch sử chat", type="secondary"):
-                st.session_state.chat_history = []
-                save_chat_history([])
-                st.rerun()
+        if st.button("🗑️ Xóa lịch sử chat", type="secondary"):
+            st.session_state.chat_history = []
+            save_chat_history([])
+            st.experimental_rerun()
 
-        # Debug button
-        if st.button("🔍 Debug Session", type="secondary", help="Debug session state"):
-            st.write("🔍 Debug Info:")
-            st.write(
-                f"- processed_files: {st.session_state.get('processed_files', 'NOT SET')}"
-            )
-            st.write(
-                f"- auto_reloaded: {st.session_state.get('auto_reloaded', 'NOT SET')}"
-            )
-            st.write(
-                f"- force_show_upload: {st.session_state.get('force_show_upload', 'NOT SET')}"
-            )
+        # (Removed) Buttons for Weaviate chat operations per user request
 
-            if os.path.exists(UPLOADS_DIR):
-                files = os.listdir(UPLOADS_DIR)
-                st.write(f"- Files in uploads dir: {files}")
-            else:
-                st.write("- Uploads directory does not exist")
 
-        # Debug RAG Pipeline button
-        if st.button(
-            "🔍 Debug RAG Pipeline", type="secondary", help="Debug RAG pipeline search"
-        ):
-            if rag_pipeline:
-                st.write("🔍 RAG Pipeline Debug:")
-
-                # Test direct search
-                test_query = "OKVIP - TUYỂN DỤNG IT DEV"
-                st.write(f"Testing query: '{test_query}'")
-
-                # Get all documents
-                try:
-                    all_docs = rag_pipeline.document_store.get_all_documents()
-                    st.write(f"Total documents in store: {len(all_docs)}")
-
-                    # Show first few documents
-                    for i, doc in enumerate(all_docs[:3]):
-                        st.write(f"Document {i+1}:")
-                        st.write(f"Content: {doc.content[:300]}...")
-                        st.write(f"Meta: {doc.meta}")
-                        st.write("---")
-
-                    # Test direct retrieval
-                    try:
-                        if hasattr(rag_pipeline.retriever, "retrieve"):
-                            retrieved = rag_pipeline.retriever.retrieve(test_query)
-                            st.write(f"Retrieved documents: {len(retrieved)}")
-                            for i, doc in enumerate(retrieved[:2]):
-                                st.write(f"Retrieved {i+1}: {doc.content[:200]}...")
-                    except Exception as e:
-                        st.error(f"Error debugging RAG: {e}")
-                except Exception as e:
-                    st.error(f"Error debugging RAG: {e}")
-        else:
-            st.error("RAG Pipeline not available")
-
-        # Test Text Processing button
-        if st.button(
-            "🔍 Test Text Processing",
-            type="secondary",
-            help="Test text processing functions",
-        ):
-            test_text_processing()
-
-        # Force Reload Documents button
-        if st.button(
-            "🔄 Force Reload Documents",
-            type="secondary",
-            help="Force clear and reload all documents",
-        ):
-            if rag_pipeline:
-                # Clear documents
-                rag_pipeline.clear_documents()
-                st.success("✅ Cleared documents")
-
-                # Clear session state
-                st.session_state.processed_files = []
-                st.session_state.auto_reloaded = False
-
-                # Reload documents
-                auto_reload_documents(rag_pipeline, image_database)
-                st.session_state.auto_reloaded = True
-
-                st.success("✅ Documents reloaded!")
-                st.rerun()
-            else:
-                st.error("RAG Pipeline not available")
-
-        # Reset session button
-        if st.button(
-            "🔄 Reset Session", type="secondary", help="Reset all session state"
-        ):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.success("✅ Session state reset!")
-            st.rerun()
 
     # Main content area
     st.title("🤖 Hybrid RAG Chatbot")
@@ -602,6 +493,15 @@ def main():
                 st.write(message["question"])
             with st.chat_message("assistant"):
                 st.write(message["answer"])
+                # Persisted images per message
+                imgs = message.get("images") or []
+                if imgs:
+                    st.info("🖼️ **Ảnh liên quan trong tài liệu:**")
+                    for i, img in enumerate(imgs[:1]):  # show at most 1 image per message
+                        try:
+                            st.image(img.get("path"), caption=(img.get("context", "")[:100] + "..."))
+                        except Exception:
+                            pass
                 if message.get("sources"):
                     with st.expander("📚 Nguồn tham khảo"):
                         for source in message["sources"]:
@@ -642,7 +542,7 @@ def main():
 
             # Hide upload area after processing
             st.session_state.force_show_upload = False
-            st.rerun()
+            st.experimental_rerun()
 
 
 def fix_double_extension(filename: str) -> str:
@@ -658,16 +558,35 @@ def fix_double_extension(filename: str) -> str:
     📊 Purpose: Xử lý lỗi upload file có double extension
     🔍 Common cases: .pdf.pdf, .docx.docx, .xlsx.xlsx, .md.md
     """
+    # More comprehensive extension mapping
     extensions_map = {
         ".pdf.pdf": ".pdf",
         ".docx.docx": ".docx",
         ".xlsx.xlsx": ".xlsx",
         ".md.md": ".md",
+        ".txt.txt": ".txt",
+        ".csv.csv": ".csv",
+        ".json.json": ".json",
+        ".html.html": ".html",
+        ".htm.htm": ".htm",
+        ".pptx.pptx": ".pptx",
+        ".xls.xls": ".xls",
     }
 
+    # Check for double extensions
     for old_ext, new_ext in extensions_map.items():
         if filename.endswith(old_ext):
             return filename.replace(old_ext, new_ext)
+    
+    # Also check for any double extension pattern
+    import re
+    # Pattern to match double extensions like .ext.ext
+    double_ext_pattern = r'\.([^.]+)\.\1$'
+    match = re.search(double_ext_pattern, filename)
+    if match:
+        ext = match.group(1)
+        return filename.replace(f'.{ext}.{ext}', f'.{ext}')
+    
     return filename
 
 
@@ -715,9 +634,10 @@ def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> 
 
     for i, uploaded_file in enumerate(uploaded_files):
         try:
-            # Show simple status
+            # Show simple status with fixed filename
+            fixed_filename = fix_double_extension(uploaded_file.name)
             status_container.info(
-                f"🔄 Đang xử lý: {uploaded_file.name} ({i+1}/{total_files})"
+                f"🔄 Đang xử lý: {fixed_filename} ({i+1}/{total_files})"
             )
 
             # Save file
@@ -726,41 +646,43 @@ def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> 
             # Process with document service
             documents = DocumentService().convert_file(file_path)
 
-            if documents:
+            if documents and rag_pipeline:
                 # Add to RAG pipeline
                 rag_pipeline.add_documents(documents)
 
                 # Extract images
+                # Use the fixed filename (the one actually saved) so source matching works
                 images = image_database.extract_images_from_any_file(
-                    file_path, uploaded_file.name
+                    file_path, fix_double_extension(uploaded_file.name)
                 )
 
-                # Update session state
-                if uploaded_file.name not in st.session_state.processed_files:
-                    st.session_state.processed_files.append(uploaded_file.name)
+                # Update session state with fixed filename
+                fixed_filename = fix_double_extension(uploaded_file.name)
+                if fixed_filename not in st.session_state.processed_files:
+                    st.session_state.processed_files.append(fixed_filename)
 
                 processed_count += 1
 
                 # Show success status
-                status_container.success(f"✅ Đã xử lý: {uploaded_file.name}")
+                status_container.success(f"✅ Đã xử lý: {fixed_filename}")
 
                 # Show image extraction status if images found
                 if images:
                     status_container.info(
-                        f"🖼️ Đã trích xuất {len(images)} ảnh từ {uploaded_file.name}"
+                        f"🖼️ Đã trích xuất {len(images)} ảnh từ {fixed_filename}"
                     )
 
             else:
-                status_container.warning(f"⚠️ Không thể xử lý: {uploaded_file.name}")
+                status_container.warning(f"⚠️ Không thể xử lý: {fixed_filename}")
 
         except Exception as e:
-            logger.error(f"❌ Error processing {uploaded_file.name}: {e}")
-            status_container.error(f"❌ Lỗi xử lý: {uploaded_file.name}")
+            logger.error(f"❌ Error processing {fixed_filename}: {e}")
+            status_container.error(f"❌ Lỗi xử lý: {fixed_filename}")
 
     # Final success message
     if processed_count > 0:
         status_container.success(f"🚀 Đã xử lý thành công {processed_count} file!")
-        st.rerun()
+        st.experimental_rerun()
     else:
         status_container.error("❌ Không có file nào được xử lý thành công")
 
@@ -805,130 +727,149 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
         try:
             # Sử dụng RAG pipeline để tìm câu trả lời
             result = rag_pipeline.query(prompt)
+            if not isinstance(result, dict):
+                result = {"answer": str(result), "sources": []}
 
-            # Display answer
-            st.markdown(result["answer"], unsafe_allow_html=True)
+            # Display answer (parse JSON to render tables in Markdown when available)
+            displayed_answer = str(result.get("answer", ""))
+            parsed = None
+            try:
+                parsed = json.loads(displayed_answer)
+            except Exception:
+                try:
+                    start = displayed_answer.find("{")
+                    end = displayed_answer.rfind("}")
+                    if start != -1 and end != -1 and end > start:
+                        parsed = json.loads(displayed_answer[start : end + 1])
+                except Exception:
+                    parsed = None
 
-            # Only show images if RAG found relevant information
-            if "Không tìm thấy thông tin" not in result["answer"]:
-                # Tìm và hiển thị ảnh liên quan
-                relevant_images = []
+            if isinstance(parsed, dict):
+                ans = parsed.get("answer") or parsed.get("short_answer")
+                det = parsed.get("details")
+                tables = parsed.get("tables") or []
+                if ans:
+                    st.markdown(ans)
+                if det:
+                    st.markdown(det)
+                for tbl in tables:
+                    if isinstance(tbl, str) and "|" in tbl:
+                        st.markdown(tbl)
 
-                # Lấy source documents để tìm file nào chứa câu trả lời
-                source_docs = result.get("source_documents", [])
-                source_files = set()
-
-                for doc in source_docs:
-                    # Trích xuất tên file từ document metadata
-                    if hasattr(doc, "metadata"):
-                        source_file = doc.metadata.get("source", "")
+                # Merge JSON sources with pipeline sources for display
+                json_sources = []
+                for s in parsed.get("sources", []) or []:
+                    if isinstance(s, dict):
+                        label = s.get("file") or s.get("source") or "Unknown"
                     else:
-                        # Thử trích xuất từ document content
-                        content = str(doc)
-                        import re
+                        label = str(s)
+                    if label:
+                        json_sources.append(label)
+                result["sources"] = list({*(result.get("sources", []) or []), *json_sources})
 
-                        file_match = re.search(r"uploads[/\\]([^/\s]+)", content)
-                        if file_match:
-                            source_file = file_match.group(1)
-                        else:
-                            source_file = ""
-
-                    if source_file:
-                        source_files.add(source_file)
-
-                # Tìm ảnh từ cùng source files (ưu tiên cao nhất)
-                for source_file in source_files:
-                    images_from_source = image_database.get_images_by_source(
-                        source_file
-                    )
-                    relevant_images.extend(images_from_source)
-
-                # Nếu không tìm thấy ảnh từ source files, tìm kiếm theo query
-                if not relevant_images:
-                    relevant_images = image_database.find_relevant_images(
-                        prompt, max_results=3
-                    )
-
-                # Loại bỏ trùng lặp và giới hạn kết quả
-                unique_images = []
-                seen_paths = set()
-                for img in relevant_images:
-                    if img["path"] not in seen_paths:
-                        unique_images.append(img)
-                        seen_paths.add(img["path"])
-
-                # Hiển thị ảnh (giới hạn 1 ảnh để tránh trùng lặp)
-                if unique_images:
-                    st.info("🖼️ **Ảnh liên quan trong tài liệu:**")
-                    display_images = unique_images[:1]  # Chỉ hiển thị 1 ảnh
-
-                    # Store displayed images for persistence
-                    st.session_state.last_displayed_images = display_images
-
-                    # Hiển thị ảnh
-                    for i, img in enumerate(display_images):
-                        st.image(
-                            img["path"], caption=img.get("context", "")[:100] + "..."
-                        )
-                        with open(img["path"], "rb") as fh:
-                            st.download_button(
-                                "📥 Tải ảnh",
-                                fh.read(),
-                                file_name=img.get("filename", "image.png"),
-                                mime="image/png",
-                                key=f"download_img_{i}_{img.get('filename', 'image')}",
-                            )
-
-                # Nếu không có ảnh mới, hiển thị ảnh từ câu hỏi trước
-                elif st.session_state.get("last_displayed_images"):
-                    st.info("🖼️ **Ảnh liên quan từ câu hỏi trước:**")
-                    display_images = st.session_state.last_displayed_images[
-                        :1
-                    ]  # Chỉ 1 ảnh
-                    for i, img in enumerate(display_images):
-                        st.image(
-                            img["path"], caption=img.get("context", "")[:100] + "..."
-                        )
-                        with open(img["path"], "rb") as fh:
-                            st.download_button(
-                                "📥 Tải ảnh",
-                                fh.read(),
-                                file_name=img.get("filename", "image.png"),
-                                mime="image/png",
-                                key=f"persist_img_{i}_{img.get('filename', 'image')}",
-                            )
+                # Prepare concise answer for history
+                displayed_answer = (ans or "").strip()
+                if det:
+                    displayed_answer += ("\n\n" + det.strip())
             else:
-                # Clear last displayed images when no relevant info found
-                if "last_displayed_images" in st.session_state:
-                    del st.session_state.last_displayed_images
+                st.markdown(displayed_answer, unsafe_allow_html=True)
 
-                    # Store sources for later display
-                    sources = result.get("sources", [])
-                    if sources:
-                        with st.expander("📚 Nguồn tham khảo"):
-                            # Lọc và hiển thị tên file gốc duy nhất
-                            unique_sources = []
-                            for source in sources:
-                                if source not in unique_sources:
-                                    unique_sources.append(source)
+            # Only show images when the user explicitly asks about images
+            image_query = any(k in (prompt or "").lower() for k in ["hình", "ảnh", "hình ảnh", "image", "picture", "photo"])
+            if image_query and ("Không tìm thấy thông tin" not in result.get("answer", "")):
+                # Collect source files from returned documents
+                source_files = set()
+                docs = result.get("documents", []) if isinstance(result, dict) else []
+                for doc in docs:
+                    meta = getattr(doc, "meta", None) or getattr(doc, "metadata", None) or {}
+                    if isinstance(meta, dict):
+                        src = meta.get("source", "")
+                        if src:
+                            try:
+                                import os as _os
+                                src = _os.path.basename(src)
+                            except Exception:
+                                pass
+                            source_files.add(src)
 
-                            for i, source in enumerate(unique_sources):
-                                st.write(f"**📄 {source}**")
+                # Fetch images strictly by matched source files
+                relevant_images = []
+                for source_file in source_files:
+                    relevant_images.extend(image_database.get_images_by_source(source_file))
 
-                    # Add to chat history and save
-                    if "chat_history" not in st.session_state:
-                        st.session_state.chat_history = []
+                # If nothing matched by source, try query-based search (still only for image queries)
+                if not relevant_images:
+                    relevant_images = image_database.find_relevant_images(prompt, max_results=3)
 
-                    st.session_state.chat_history.append(
-                        {
-                            "question": prompt,
-                            "answer": result["answer"],
-                            "sources": sources,
-                            "timestamp": datetime.now().isoformat(),
-                        }
+                # Show at most one image if any matched
+                if relevant_images:
+                    unique_paths = set()
+                    display_images = []
+                    for img in relevant_images:
+                        if img.get("path") and img["path"] not in unique_paths:
+                            display_images.append(img)
+                            unique_paths.add(img["path"])
+                        if len(display_images) >= 1:
+                            break
+
+                    if display_images:
+                        st.info("🖼️ **Ảnh liên quan trong tài liệu:**")
+                        for i, img in enumerate(display_images):
+                            st.image(img["path"], caption=img.get("context", "")[:100] + "...")
+                            with open(img["path"], "rb") as fh:
+                                st.download_button(
+                                    "📥 Tải ảnh",
+                                    fh.read(),
+                                    file_name=img.get("filename", "image.png"),
+                                    mime="image/png",
+                                    key=f"download_img_{i}_{img.get('filename', 'image')}",
+                                )
+                        # Persist images with this message
+                        persisted_imgs = [
+                            {"path": im.get("path"), "filename": im.get("filename"), "context": im.get("context", "")}
+                            for im in display_images
+                        ]
+                    else:
+                        persisted_imgs = []
+                else:
+                    persisted_imgs = []
+            else:
+                persisted_imgs = []
+            # Always show sources and save history (regardless of found/not found)
+            sources = result.get("sources", [])
+            if sources:
+                with st.expander("📚 Nguồn tham khảo"):
+                    unique_sources = []
+                    for source in sources:
+                        if source not in unique_sources:
+                            unique_sources.append(source)
+                    for i, source in enumerate(unique_sources):
+                        st.write(f"**📄 {source}**")
+
+            if "chat_history" not in st.session_state:
+                st.session_state.chat_history = []
+            st.session_state.chat_history.append(
+                {
+                    "question": prompt,
+                    "answer": displayed_answer or result.get("answer", ""),
+                    "sources": sources,
+                    "images": persisted_imgs,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+            save_chat_history(st.session_state.chat_history)
+
+            # Persist chat to Weaviate if available
+            try:
+                if hasattr(rag_pipeline, "document_store") and hasattr(rag_pipeline.document_store, "write_chat_interaction"):
+                    rag_pipeline.document_store.write_chat_interaction(
+                        question=prompt,
+                        answer=displayed_answer or result.get("answer", ""),
+                        sources=sources,
+                        timestamp=datetime.now().isoformat(),
                     )
-                    # Save chat history after each interaction
-                    save_chat_history(st.session_state.chat_history)
+            except Exception as e:
+                logger.warning(f"Could not persist chat to Weaviate: {e}")
 
         except Exception as e:
             st.error(f"❌ Lỗi: {str(e)}")

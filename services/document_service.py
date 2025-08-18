@@ -269,6 +269,23 @@ class DocumentService:
                     text = page.extract_text()
                     
                     if text.strip():
+                        # Try to extract table blocks from raw page text
+                        table_blocks = self._extract_markdown_tables(text)
+                        for tbl_idx, table_md in enumerate(table_blocks):
+                            element_counter += 1
+                            table_element_id = f"elem_{document_id}_{element_counter:04d}"
+                            elements.append({
+                                "element_id": table_element_id,
+                                "type": "Table",
+                                "content": table_md,
+                                "metadata": {
+                                    "page_number": page_num + 1,
+                                    "language": "vi",
+                                    "parent_id": document_id,
+                                    "table_index": tbl_idx
+                                }
+                            })
+
                         # Split text into chunks
                         chunks = self._split_text(text)
                         
@@ -331,6 +348,41 @@ class DocumentService:
                         }
                     }
                     elements.append(element)
+
+            # Additionally extract DOCX tables as Markdown
+            try:
+                tables = getattr(doc, "tables", []) or []
+                for tbl_idx, table in enumerate(tables):
+                    try:
+                        rows = table.rows
+                        if not rows:
+                            continue
+                        header_cells = [c.text.strip() for c in rows[0].cells]
+                        headers = header_cells if any(header_cells) else [f"Cột {i+1}" for i in range(len(rows[0].cells))]
+                        md_lines = ["| " + " | ".join(headers) + " |", "|" + "|".join(["---" for _ in headers]) + "|"]
+                        for r in rows[1:]:
+                            values = [c.text.strip().replace("\n", " ") for c in r.cells]
+                            if len(values) < len(headers):
+                                values += [""] * (len(headers) - len(values))
+                            md_lines.append("| " + " | ".join(values[:len(headers)]) + " |")
+                        table_md = "\n".join(md_lines)
+
+                        element_counter += 1
+                        table_element_id = f"elem_{document_id}_{element_counter:04d}"
+                        elements.append({
+                            "element_id": table_element_id,
+                            "type": "Table",
+                            "content": table_md,
+                            "metadata": {
+                                "language": "vi",
+                                "parent_id": document_id,
+                                "table_index": tbl_idx
+                            }
+                        })
+                    except Exception as te:
+                        logger.warning(f"⚠️ Error extracting DOCX table: {te}")
+            except Exception:
+                pass
                     
         except Exception as e:
             logger.error(f"❌ Error processing DOCX {file_path}: {e}")
@@ -345,6 +397,22 @@ class DocumentService:
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 content = file.read()
+
+                # Extract table blocks from text files as Markdown tables
+                table_blocks = self._extract_markdown_tables(content)
+                for tbl_idx, table_md in enumerate(table_blocks):
+                    element_counter += 1
+                    table_element_id = f"elem_{document_id}_{element_counter:04d}"
+                    elements.append({
+                        "element_id": table_element_id,
+                        "type": "Table",
+                        "content": table_md,
+                        "metadata": {
+                            "language": "vi",
+                            "parent_id": document_id,
+                            "table_index": tbl_idx
+                        }
+                    })
                 
                 # Split content into chunks
                 chunks = self._split_text(content)
@@ -372,6 +440,52 @@ class DocumentService:
             logger.error(f"❌ Error processing text file {file_path}: {e}")
             
         return elements
+
+    def _extract_markdown_tables(self, text: str) -> List[str]:
+        """Detect simple table-like blocks and convert to Markdown tables.
+        Heuristics:
+        - Block starts after a line beginning with 'Bảng' (case-insensitive) or contains at least one line with >1 column separated by tabs or 2+ spaces.
+        - Block ends at the first empty line.
+        """
+        lines = text.splitlines()
+        i = 0
+        markdown_tables: List[str] = []
+        while i < len(lines):
+            line = lines[i].strip()
+            trigger = line.lower().startswith("bảng")
+            if trigger:
+                # Collect until blank line
+                block: List[str] = []
+                i += 1
+                while i < len(lines) and lines[i].strip():
+                    block.append(lines[i])
+                    i += 1
+                md = self._lines_to_markdown_table(block)
+                if md:
+                    markdown_tables.append(md)
+            i += 1
+        return markdown_tables
+
+    def _lines_to_markdown_table(self, block_lines: List[str]) -> Optional[str]:
+        """Convert a list of lines into a Markdown table using whitespace/tab splitting."""
+        if not block_lines:
+            return None
+        import re as _re
+        def split_cols(s: str) -> List[str]:
+            parts = [p.strip() for p in _re.split(r"\t+|\s{2,}", s) if p.strip()]
+            return parts
+        rows = [split_cols(l) for l in block_lines if split_cols(l)]
+        if not rows or len(rows[0]) < 2:
+            return None
+        headers = rows[0]
+        md_lines = ["| " + " | ".join(headers) + " |",
+                    "|" + "|".join(["---" for _ in headers]) + "|"]
+        for r in rows[1:]:
+            # Normalize to header length
+            if len(r) < len(headers):
+                r = r + [""] * (len(headers) - len(r))
+            md_lines.append("| " + " | ".join(r[:len(headers)]) + " |")
+        return "\n".join(md_lines)
 
     def _process_excel(self, file_path: str, document_id: str) -> List[Dict[str, Any]]:
         """Process Excel files and extract tables"""

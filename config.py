@@ -30,6 +30,10 @@ class DatabaseConfig:
     api_key: Optional[str] = None
     qdrant_url: Optional[str] = None
     qdrant_api_key: Optional[str] = None
+    # Weaviate configuration
+    weaviate_url: Optional[str] = None
+    weaviate_api_key: Optional[str] = None
+    weaviate_class_name: str = "Documents"
 
     @classmethod
     def from_env(cls) -> "DatabaseConfig":
@@ -43,6 +47,10 @@ class DatabaseConfig:
             qdrant_url=os.getenv("QDRANT_URL")
             or f"https://{os.getenv('QDRANT_HOST', '')}",
             qdrant_api_key=os.getenv("QDRANT_API_KEY"),
+            # Weaviate config
+            weaviate_url=os.getenv("WEAVIATE_URL"),
+            weaviate_api_key=os.getenv("WEAVIATE_API_KEY"),
+            weaviate_class_name=os.getenv("WEAVIATE_CLASS_NAME", "Documents"),
         )
 
     def validate(self) -> bool:
@@ -264,3 +272,7 @@ TOP_K = config.processing.top_k
 UPLOAD_DIR = config.app.upload_dir
 LOG_LEVEL = config.app.log_level
 META_PERMISSION_KEY = config.app.permission_key
+# Weaviate exports
+WEAVIATE_URL = config.database.weaviate_url
+WEAVIATE_API_KEY = config.database.weaviate_api_key
+WEAVIATE_CLASS_NAME = config.database.weaviate_class_name

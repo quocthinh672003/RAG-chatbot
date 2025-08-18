@@ -1,10 +1,9 @@
 """
-Haystack RAG Pipeline Service
-Enhanced with PreProcessor and better pipeline structure
+Haystack 2.x RAG Pipeline Service (Weaviate only)
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import os
 import re
 import unicodedata
@@ -12,534 +11,449 @@ from difflib import SequenceMatcher
 
 logger = logging.getLogger(__name__)
 
-# Set environment variables for Haystack
+# Environment knobs for pydantic noise
 os.environ["PYDANTIC_ARBITRARY_TYPES_ALLOWED"] = "true"
 os.environ["PYDANTIC_IGNORE_UNKNOWN"] = "true"
 
+# Haystack imports
 try:
-    from haystack import Document
-    from haystack.pipelines import Pipeline
-    from haystack.nodes import (
-        BM25Retriever,
-        LostInTheMiddleRanker,
-    )
-    from haystack.nodes import PromptTemplate, PreProcessor
-    from haystack.document_stores import InMemoryDocumentStore
-    from core.weaviate_database import get_document_store
+    from haystack import Document, Pipeline, component
+    from haystack.components.rankers.lost_in_the_middle import LostInTheMiddleRanker
+    from haystack.components.preprocessors import DocumentSplitter
+    from haystack.components.builders import PromptBuilder
+    from haystack.components.generators import OpenAIGenerator
 
     HAYSTACK_AVAILABLE = True
-    logger.info("✅ Haystack RAG pipeline enabled")
 except Exception as e:
     HAYSTACK_AVAILABLE = False
-    logger.error(f"❌ Haystack RAG pipeline failed: {e}")
+    logger.error(f"Haystack import failed: {e}")
+
+# Weaviate client
+try:
+    import weaviate
+    WEAVIATE_AVAILABLE = True
+except Exception:
+    WEAVIATE_AVAILABLE = False
 
 from config import config
 
 
-class TextProcessor:
-    """Generic text processing utilities for multilingual support"""
+class WeaviateDocumentStore:
+    """Minimal Weaviate v4 wrapper for Haystack integration."""
 
+    def __init__(self, url: str, api_key: str, index: str):
+        if not WEAVIATE_AVAILABLE:
+            raise ImportError("weaviate-client not installed")
+
+        self.client = weaviate.connect_to_weaviate_cloud(
+            cluster_url=url,
+            auth_credentials=weaviate.auth.AuthApiKey(api_key=api_key),
+        )
+        self.index = index
+        self.collection = None
+        # OpenAI embeddings client (client-side embedding)
+        try:
+            from openai import OpenAI  # type: ignore
+            self._embed_client = OpenAI(api_key=config.openai_api_key)
+            self._embed_model = config.models.embedding_model
+        except Exception:
+            self._embed_client = None
+            self._embed_model = None
+        self._ensure_collection()
+
+    def _ensure_collection(self) -> None:
+        from weaviate.classes.config import Property, DataType, Configure
+
+        try:
+            self.collection = self.client.collections.get(self.index)
+        except Exception:
+            # Create collection configured for client-side vectors (no server vectorizer)
+            self.collection = self.client.collections.create(
+                name=self.index,
+                properties=[
+                    Property(name="content", data_type=DataType.TEXT),
+                    Property(name="source", data_type=DataType.TEXT),
+                    Property(name="page", data_type=DataType.INT),
+                    Property(name="file_type", data_type=DataType.TEXT),
+                ],
+                vectorizer_config=Configure.Vectorizer.none(),
+            )
+
+        # Ensure chat collection exists as well
+        try:
+            self.chat_collection = self.client.collections.get("Chats")
+        except Exception:
+            try:
+                self.chat_collection = self.client.collections.create(
+                    name="Chats",
+                    properties=[
+                        Property(name="question", data_type=DataType.TEXT),
+                        Property(name="answer", data_type=DataType.TEXT),
+                        Property(name="sources", data_type=DataType.TEXT),
+                        Property(name="timestamp", data_type=DataType.TEXT),
+                    ],
+                    vectorizer_config=Configure.Vectorizer.none(),
+                )
+            except Exception:
+                self.chat_collection = None
+
+    def write_documents(self, documents: List[Document]) -> None:
+        if self.collection is None:
+            self._ensure_collection()
+        for doc in documents:
+            props = {
+                "content": doc.content,
+                "source": (doc.meta or {}).get("source", "unknown"),
+                "page": (doc.meta or {}).get("page", 0),
+                "file_type": (doc.meta or {}).get("file_type", "unknown"),
+            }
+            # Compute client-side embedding if available
+            vector = None
+            if self._embed_client and self._embed_model and doc.content:
+                try:
+                    emb = self._embed_client.embeddings.create(model=self._embed_model, input=doc.content)
+                    vector = emb.data[0].embedding  # type: ignore[attr-defined]
+                except Exception as e:
+                    logger.warning(f"Embedding failed, inserting without vector: {e}")
+            if vector is not None:
+                self.collection.data.insert(properties=props, vector=vector)
+            else:
+                self.collection.data.insert(properties=props)
+
+    def query_documents(self, query: str, top_k: int = 5) -> List[Document]:
+        if self.collection is None:
+            self._ensure_collection()
+        # Vector search only (collection uses vectorizer none)
+        if not (self._embed_client and self._embed_model):
+            logger.error("Embedding client/model not initialized for vector search")
+            return []
+        try:
+            emb = self._embed_client.embeddings.create(model=self._embed_model, input=query)
+            vector = emb.data[0].embedding  # type: ignore[attr-defined]
+            # Weaviate v4: near_vector(near_vector=..., limit=...)
+            res = self.collection.query.near_vector(near_vector=vector, limit=top_k)
+        except Exception as e:
+            logger.error(f"near_vector failed: {e}")
+            return []
+        docs: List[Document] = []
+        for obj in getattr(res, "objects", []) or []:
+            props = getattr(obj, "properties", {}) or {}
+            content = props.get("content")
+            if not content:
+                continue
+            meta = {
+                "source": props.get("source", "unknown"),
+                "page": props.get("page", 0),
+                "file_type": props.get("file_type", "unknown"),
+            }
+            docs.append(Document(content=content, meta=meta))
+        return docs
+
+    def delete_documents(self) -> None:
+        try:
+            self.client.collections.delete(self.index)
+        except Exception:
+            pass
+        self.collection = None
+        self._ensure_collection()
+
+    def count_documents(self) -> int:
+        try:
+            if self.collection is None:
+                self._ensure_collection()
+            # Fallback: iterate – safe on small data
+            count = 0
+            for _ in self.collection.iterator():
+                count += 1
+            return count
+        except Exception:
+            return 0
+
+    # --- Chat persistence helpers ---
+    def write_chat_interaction(self, question: str, answer: str, sources: list, timestamp: str) -> None:
+        """Persist one chat Q/A with optional vector over question for retrieval."""
+        try:
+            if self.chat_collection is None:
+                self._ensure_collection()
+            props = {
+                "question": question,
+                "answer": answer,
+                "sources": ", ".join(sources or []),
+                "timestamp": timestamp,
+            }
+            vector = None
+            if self._embed_client and self._embed_model and question:
+                try:
+                    emb = self._embed_client.embeddings.create(model=self._embed_model, input=question)
+                    vector = emb.data[0].embedding  # type: ignore[attr-defined]
+                except Exception as e:
+                    logger.warning(f"Embedding chat failed: {e}")
+            if vector is not None:
+                self.chat_collection.data.insert(properties=props, vector=vector)
+            else:
+                self.chat_collection.data.insert(properties=props)
+        except Exception as e:
+            logger.error(f"Failed to write chat interaction: {e}")
+
+
+@component
+class WeaviateRetriever:
+    def __init__(self, store: WeaviateDocumentStore, top_k: int = 5):
+        self.store = store
+        self.top_k = top_k
+
+    @component.output_types(documents=List[Document])
+    def run(self, query: str):
+        return {"documents": self.store.query_documents(query=query, top_k=self.top_k)}
+
+
+class TextProcessor:
     @staticmethod
     def normalize_text(text: str) -> str:
-        """Normalize text for better matching across languages"""
         if not text:
             return ""
-
-        # Convert to lowercase
         text = text.lower()
-
-        # Remove diacritics (accent marks) for better matching
         text = unicodedata.normalize("NFD", text)
         text = "".join(c for c in text if not unicodedata.combining(c))
-
-        # Remove special characters but keep spaces and alphanumeric
         text = re.sub(r"[^\w\s]", " ", text)
-
-        # Normalize whitespace
         text = re.sub(r"\s+", " ", text).strip()
-
         return text
-
-    @staticmethod
-    def create_search_variations(query: str) -> List[str]:
-        """Create comprehensive search variations generically"""
-        if not query:
-            return []
-
-        variations = set()
-
-        # Original query
-        variations.add(query)
-
-        # Normalized version
-        normalized = TextProcessor.normalize_text(query)
-        variations.add(normalized)
-
-        # Split into words and add individual words
-        words = normalized.split()
-        variations.update(words)
-
-        # Add word combinations (bigrams, trigrams)
-        for i in range(len(words)):
-            for j in range(i + 1, min(i + 4, len(words) + 1)):
-                variations.add(" ".join(words[i:j]))
-
-        # Add partial matches (prefixes)
-        for word in words:
-            if len(word) > 2:
-                for i in range(2, len(word)):
-                    variations.add(word[:i])
-
-        return list(variations)
-
-    @staticmethod
-    def calculate_similarity(text1: str, text2: str) -> float:
-        """Calculate similarity between two texts using fuzzy matching"""
-        if not text1 or not text2:
-            return 0.0
-
-        # Normalize both texts
-        norm1 = TextProcessor.normalize_text(text1)
-        norm2 = TextProcessor.normalize_text(text2)
-
-        # Use SequenceMatcher for fuzzy matching
-        return SequenceMatcher(None, norm1, norm2).ratio()
 
 
 class HaystackRAGPipeline:
-    """Enhanced Haystack-based RAG Pipeline with PreProcessor"""
+    """Haystack 2.x pipeline wired to Weaviate only (no InMemory)."""
 
     def __init__(self):
         if not HAYSTACK_AVAILABLE:
-            raise ImportError("Haystack not available")
+            raise ImportError("Haystack 2.x not available")
+        if not WEAVIATE_AVAILABLE:
+            raise ImportError("weaviate-client not available")
+        self._init()
 
-        self._init_haystack()
-        logger.info("🎯 Enhanced Haystack RAG pipeline initialized")
+    def _init(self) -> None:
+        # Document store (Weaviate only)
+        self.document_store = WeaviateDocumentStore(
+            url=config.database.weaviate_url,
+            api_key=config.database.weaviate_api_key,
+            index=config.database.weaviate_class_name,
+        )
 
-    def _init_haystack(self):
-        """Initialize Haystack components with PreProcessor"""
-        try:
-            # Initialize document store (Weaviate Cloud or fallback to InMemory)
-            try:
-                self.document_store = get_document_store()
-                logger.info("✅ Using Weaviate Cloud document store")
+        # Splitter
+        self.document_splitter = DocumentSplitter(
+            split_by="word", split_length=config.processing.chunk_size, split_overlap=config.processing.chunk_overlap
+        )
 
-                # Test if Weaviate is working properly
-                try:
-                    test_docs = self.document_store.get_all_documents()
-                    logger.info(
-                        f"✅ Weaviate test successful: {len(test_docs)} documents"
-                    )
-                except Exception as e:
-                    logger.error(f"❌ Weaviate test failed: {e}")
-                    raise Exception("Weaviate not working properly")
+        # Retriever component
+        self.retriever = WeaviateRetriever(self.document_store, top_k=config.processing.top_k)
 
-            except Exception as e:
-                logger.warning(f"⚠️ Weaviate Cloud not available, using InMemory: {e}")
-                self.document_store = InMemoryDocumentStore(
-                    embedding_dim=config.models.embedding_dimension,
-                    similarity="cosine",
-                    use_bm25=True,
-                )
-                logger.info("✅ Using InMemoryDocumentStore as fallback")
+        # Ranker and LLM
+        self.diversity_ranker = LostInTheMiddleRanker(top_k=config.processing.top_k)
+        from haystack.utils.auth import Secret
+        self.generator = OpenAIGenerator(
+            api_key=Secret.from_token(config.openai_api_key),
+            model=config.models.llm_model,
+            generation_kwargs={
+                "temperature": 0,
+                "max_tokens": config.models.max_tokens,
+                "response_format": {"type": "json_object"},
+            },
+        )
 
-            # Initialize PreProcessor for better document cleaning
-            self.preprocessor = PreProcessor(
-                clean_empty_lines=True,
-                clean_whitespace=True,
-                clean_header_footer=True,
-                split_by="word",
-                split_length=config.processing.chunk_size,
-                split_overlap=config.processing.chunk_overlap,
-                split_respect_sentence_boundary=True,
-                language="vi",
-            )
+        # Prompt
+        self.prompt_builder = PromptBuilder(
+            template=(
+                """
+Bạn là trợ lý AI thông minh, nhiệm vụ: trả lời dựa duy nhất vào NGỮ CẢNH dưới đây. Tuyệt đối không bịa.
 
-            # Use BM25Retriever with Weaviate (fully compatible)
-            self.retriever = BM25Retriever(
-                document_store=self.document_store,
-                top_k=config.processing.top_k,
-            )
-            logger.info("✅ Using BM25Retriever with Weaviate Document Store")
+NGUYÊN TẮC:
+- Chỉ dùng thông tin trong tài liệu được cung cấp; nếu không có thông tin liên quan, nói rõ là không có trong tài liệu.
+- Mọi luận điểm quan trọng phải kèm trích nguồn cụ thể (file, trang, loại).
+- Nếu có bảng liên quan, tái tạo bảng bằng Markdown và đưa vào mảng tables.
+- Đầu ra phải là JSON hợp lệ duy nhất, không có text ngoài JSON.
 
-            # Use only LostInTheMiddleRanker to avoid transformers conflict
-            self.diversity_ranker = LostInTheMiddleRanker(
-                top_k=5  # Final top 5 documents
-            )
+NGỮ CẢNH (có trích nguồn):
+{% for doc in documents %}
+=== DOC {{ loop.index }} ===
+SOURCE: {{ doc.meta.source | default('unknown') }} | PAGE: {{ doc.meta.page | default(0) }} | TYPE: {{ doc.meta.file_type | default('unknown') }}
+CONTENT:
+{{ doc.content }}
+{% endfor %}
 
-            # Universal prompt template for general document Q&A
-            self.prompt_template = """
-            Bạn là trợ lý AI thông minh chuyên về tìm kiếm và trả lời thông tin từ tài liệu. Trả lời dựa trên thông tin trong ngữ cảnh được cung cấp.
-            
-            HƯỚNG DẪN TỔNG QUÁT:
-            1. PHÂN TÍCH CÂU HỎI:
-                - Hiểu rõ câu hỏi của người dùng
-                - Xác định từ khóa chính cần tìm kiếm
-                - Không giả định loại tài liệu cụ thể
-            
-            2. TÌM KIẾM THÔNG TIN:
-                - Tìm kiếm trong tất cả nội dung được cung cấp
-                - Không phân biệt loại tài liệu (JD, CV, technical, general, etc.)
-                - Tập trung vào thông tin liên quan đến câu hỏi
-            
-            3. QUY TẮC TRẢ LỜI:
-                - Trả lời chính xác dựa trên thông tin có sẵn
-                - Nếu có nhiều thông tin liên quan: tổng hợp và sắp xếp logic
-                - Nếu thông tin không đầy đủ: nêu rõ những gì tìm thấy
-                - Nếu không tìm thấy: thông báo rõ ràng
-            
-            4. ĐỊNH DẠNG TRẢ LỜI:
-                - Rõ ràng, có cấu trúc
-                - Sử dụng bullet points khi cần
-                - Trả lời bằng tiếng Việt
-                - Nếu không tìm thấy: "Không tìm thấy thông tin liên quan trong tài liệu"
-            
-            [NGỮ CẢNH]:
-            {context}
-            
-            [CÂU HỎI]: {query}
-            
-            TRẢ LỜI:
-            """
+CÂU HỎI: {{ query }}
 
-            # Use OpenAI directly instead of PromptNode
-            import openai
+YÊU CẦU ĐẦU RA (JSON):
+{
+  "answer": "Câu trả lời đầy đủ trực tiếp cho câu hỏi, ưu tiên chính xác và trung thực. Nếu không có thông tin trong tài liệu, ghi rõ.",
+  "details": "Giải thích chi tiết dựa trên các đoạn trích phù hợp trong NGỮ CẢNH. Không thêm thông tin ngoài tài liệu.",
+  "tables": [
+    "(Tùy chọn) Bảng ở dạng Markdown nếu có bảng liên quan trong tài liệu, bảo toàn đầy đủ dữ liệu và format."
+  ],
+  "sources": [
+    {
+      "file": "Tên file từ doc.meta.source",
+      "page": "Số trang từ doc.meta.page (nếu có)",
+      "type": "doc.meta.file_type",
+      "snippet": "Trích đoạn ngắn minh họa (nguyên văn)"
+    }
+  ],
+  "limitations": "Nêu rõ giới hạn dữ liệu, phần thiếu, hoặc mâu thuẫn nếu có.",
+  "follow_up_questions": ["(Tùy chọn) Gợi ý các câu hỏi tiếp theo nếu cần"]
+}
 
-            self.openai_client = openai.OpenAI(api_key=config.openai_api_key)
+QUY TẮC BỔ SUNG:
+- Nếu không tìm thấy thông tin liên quan: đặt short_answer nêu rõ không có dữ liệu trong tài liệu; details rỗng; sources là mảng rỗng; tables rỗng.
+- Tuyệt đối không chèn Markdown hay văn bản ngoài JSON. Trả về đúng một JSON duy nhất.
+"""
+            ),
+            required_variables=["query", "documents"],
+        )
 
-            # Build pipeline
-            self.pipeline = self._build_pipeline()
+        # Build pipeline
+        self.pipeline = Pipeline()
+        self.pipeline.add_component("retriever", self.retriever)
+        self.pipeline.add_component("diversity_ranker", self.diversity_ranker)
+        self.pipeline.add_component("prompt_builder", self.prompt_builder)
+        self.pipeline.add_component("generator", self.generator)
 
-            logger.info("✅ Enhanced Haystack RAG components initialized successfully")
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize Haystack RAG: {e}")
-            raise
-
-    def _build_pipeline(self):
-        """Build enhanced Haystack RAG pipeline"""
-        try:
-            # Check if retriever is compatible with Haystack Pipeline
-            if hasattr(self.retriever, "_component_config"):
-                # Standard Haystack retriever - use Pipeline
-                pipeline = Pipeline()
-                pipeline.add_node(
-                    component=self.retriever, name="Retriever", inputs=["Query"]
-                )
-                pipeline.add_node(
-                    component=self.diversity_ranker,
-                    name="DiversityRanker",
-                    inputs=["Retriever"],
-                )
-                return pipeline
-            else:
-                # Custom retriever - return None to use direct retrieval
-                logger.info("✅ Using custom retriever (no Haystack Pipeline)")
-                return None
-        except Exception as e:
-            logger.error(f"❌ Failed to build pipeline: {e}")
-            raise
+        self.pipeline.connect("retriever.documents", "diversity_ranker")
+        self.pipeline.connect("diversity_ranker.documents", "prompt_builder.documents")
+        self.pipeline.connect("prompt_builder.prompt", "generator.prompt")
 
     def add_documents(self, documents: List[Dict[str, Any]]) -> None:
-        """Add documents to the pipeline with preprocessing"""
         if not documents:
             return
-
-        haystack_docs = []
-
-        for doc in documents:
-            # Validate document structure
-            if not isinstance(doc, dict) or "page_content" not in doc:
+        hs_docs: List[Document] = []
+        for d in documents:
+            content = d.get("page_content")
+            if not content:
                 continue
-
-            # Convert to Haystack Document
-            haystack_doc = Document(
-                content=doc["page_content"],
-                meta={
-                    "source_name": doc.get("metadata", {}).get("source", "unknown"),
-                    "page": doc.get("metadata", {}).get("page", 0),
-                    "file_type": doc.get("metadata", {}).get("file_type", "unknown"),
-                    "language": doc.get("metadata", {}).get("language", "vi"),
-                },
-            )
-            haystack_docs.append(haystack_doc)
-
-        if not haystack_docs:
+            meta = (d.get("metadata") or {})
+            source = meta.get("source") or meta.get("source_name") or meta.get("source_filename") or "unknown"
+            page = meta.get("page") or meta.get("page_number") or meta.get("paragraph_index") or 0
+            file_type = meta.get("file_type")
+            if not file_type and isinstance(source, str):
+                try:
+                    _, ext = os.path.splitext(source)
+                    file_type = ext.lstrip(".") or "unknown"
+                except Exception:
+                    file_type = "unknown"
+            hs_docs.append(Document(content=content, meta={
+                "source": source,
+                "page": page,
+                "file_type": file_type or "unknown",
+            }))
+        if not hs_docs:
             return
-
-        try:
-            # Suppress ALL preprocessing logs
-            import logging
-
-            haystack_logger = logging.getLogger(
-                "haystack.nodes.preprocessor.preprocessor"
-            )
-            original_level = haystack_logger.level
-            haystack_logger.setLevel(logging.CRITICAL)
-
-            # Also suppress other noisy loggers
-            logging.getLogger("haystack.nodes.retriever").setLevel(logging.CRITICAL)
-            logging.getLogger("haystack.document_stores").setLevel(logging.CRITICAL)
-            logging.getLogger("unstructured").setLevel(logging.CRITICAL)
-            logging.getLogger("pdfminer").setLevel(logging.CRITICAL)
-            logging.getLogger("PIL").setLevel(logging.CRITICAL)
-
-            # Debug: Log before preprocessing
-            logger.info(f"🔍 Before preprocessing: {len(haystack_docs)} documents")
-            if haystack_docs:
-                logger.info(
-                    f"🔍 First doc content: {haystack_docs[0].content[:100]}..."
-                )
-
-            # Use preprocessing to create proper chunks
-            preprocessed_docs = self.preprocessor.run(haystack_docs)
-            if isinstance(preprocessed_docs, dict) and "documents" in preprocessed_docs:
-                preprocessed_docs = preprocessed_docs["documents"]
-            logger.info(f"🔍 Preprocessed {len(preprocessed_docs)} documents")
-
-            # Add preprocessed documents to document store
-            self.document_store.write_documents(preprocessed_docs)
-
-            # Verify documents were added (minimal logging)
-            try:
-                all_docs = self.document_store.get_all_documents()
-                logger.info(
-                    f"✅ Added {len(preprocessed_docs)} documents to store (total: {len(all_docs)})"
-                )
-            except Exception:
-                pass  # Silently ignore verification errors
-
-        except Exception as e:
-            logger.error(f"❌ Error adding documents: {e}")
-            import traceback
-
-            logger.error(f"❌ Traceback: {traceback.format_exc()}")
-        finally:
-            # Restore logging levels
-            haystack_logger.setLevel(original_level)
+        split_out = self.document_splitter.run(documents=hs_docs)
+        chunks = split_out.get("documents", []) if isinstance(split_out, dict) else []
+        self.document_store.write_documents(chunks)
 
     def query(self, query: str) -> Dict[str, Any]:
-        """Query the RAG pipeline with enhanced retrieval"""
         if not query or not query.strip():
-            return {
-                "answer": "Vui lòng nhập câu hỏi.",
-                "documents": [],
-                "sources": [],
-                "pipeline": "Haystack RAG",
-            }
-
-        try:
-            # Enhanced retrieval with debugging
-            logger.info(f"🔍 Querying: '{query}'")
-
-            # Debug: Check documents in store first
-            self.debug_documents()
-
-            # Simple query processing
-            query_lower = query.lower()
-
-            # Simple query enhancement for better retrieval
-            enhanced_query = query
-
-            # Add common terms for better matching (without bias)
-            if len(query.split()) <= 3:  # Short queries need enhancement
-                enhanced_query = f"{query} OR {query.lower()}"
-                logger.info(f"🔍 Query enhanced: {enhanced_query}")
+            return {"answer": "Vui lòng nhập câu hỏi.", "documents": [], "sources": [], "pipeline": "Haystack 2.x RAG"}
+        # Provide `query` to both retriever and prompt_builder
+        out = self.pipeline.run({
+            "retriever": {"query": query},
+            "prompt_builder": {"query": query}
+        })
+        if not isinstance(out, dict):
+            return {"answer": str(out), "documents": [], "sources": [], "pipeline": "Haystack 2.x RAG (Weaviate)"}
+        gen = out.get("generator", {}) if isinstance(out.get("generator", {}), dict) else {}
+        replies = gen.get("replies", []) if isinstance(gen, dict) else []
+        if replies:
+            first = replies[0]
+            if isinstance(first, str):
+                answer = first
+            elif isinstance(first, dict):
+                answer = first.get("content", str(first))
             else:
-                logger.info(f"🔍 Using original query: {enhanced_query}")
-
-            # Run pipeline to get documents
-            if self.pipeline is None:
-                # Custom retriever case (SmartRetriever)
-                documents = self.retriever.retrieve(query)
-                logger.info(
-                    f"📄 Retrieved {len(documents)} documents with SmartRetriever"
-                )
-            else:
-                # Standard Haystack pipeline case
-                result = self.pipeline.run(query=enhanced_query)
-                documents = result.get("documents", [])
-                logger.info(
-                    f"📄 Retrieved {len(documents)} documents with Haystack Pipeline"
-                )
-
-            # Debug: Log document contents
-            for i, doc in enumerate(documents[:3]):  # Log first 3 documents
-                logger.info(f"📄 Document {i+1}: {doc.content[:200]}...")
-                logger.info(f"📄 Document {i+1} meta: {doc.meta}")
-
-            # Simple document processing - keep original order
-            logger.info(f"🔍 Using {len(documents)} documents in original order")
-
-            if not documents:
-                return {
-                    "answer": "Không tìm thấy thông tin trong tài liệu đã cung cấp.",
-                    "documents": [],
-                    "sources": [],
-                    "pipeline": "Haystack RAG",
-                }
-
-            # Simple context preparation - use all retrieved documents
-            context = "\n\n".join([doc.content for doc in documents])
-            logger.info(f"📝 Context length: {len(context)} characters")
-
-            # Simple context truncation
-            max_context_length = 50000
-            if len(context) > max_context_length:
-                context = context[:max_context_length]
-                logger.info(f"📝 Context truncated to {len(context)} characters")
-
-            # Use OpenAI directly for generation
-            logger.info(f"🤖 Sending request to OpenAI...")
-            logger.info(f"🤖 Context length: {len(context)} characters")
-            logger.info(f"🤖 Query: {query}")
-
+                answer = str(first)
+        else:
+            answer = "Không tìm thấy thông tin liên quan."
+        docs = out.get("diversity_ranker", {}).get("documents", [])
+        sources = []
+        for d in docs:
+            meta = getattr(d, "meta", {}) or {}
+            src = meta.get("source", "Unknown")
             try:
-                formatted_prompt = self.prompt_template.format(
-                    context=context, query=query
-                )
-
-                # Debug: Log the full context being sent to OpenAI
-                logger.info(f"🔍 Full context being sent to OpenAI:")
-                logger.info(f"🔍 {context[:1000]}...")
-                logger.info(f"🔍 Context contains 'OKVIP': {'OKVIP' in context}")
-                logger.info(
-                    f"🔍 Context contains 'tuyển dụng': {'tuyển dụng' in context}"
-                )
-                logger.info(f"🔍 Context contains 'IT DEV': {'IT DEV' in context}")
-
-                response = self.openai_client.chat.completions.create(
-                    model=config.models.llm_model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": formatted_prompt,
-                        },
-                        {"role": "user", "content": query},
-                    ],
-                    temperature=0.2,
-                    max_tokens=1200,
-                )
-
-                answer = response.choices[0].message.content
-                logger.info(f"🤖 OpenAI response: {answer[:200]}...")
-            except Exception as e:
-                logger.error(f"❌ Error calling OpenAI: {e}")
-                raise
-
-            return {
-                "answer": answer,
-                "documents": documents,
-                "sources": [
-                    doc.meta.get("source_name", "Unknown") for doc in documents
-                ],
-                "pipeline": "Haystack RAG",
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Error in RAG query: {e}")
-            return {
-                "answer": f"❌ Lỗi xử lý câu hỏi: {str(e)}",
-                "documents": [],
-                "sources": [],
-                "pipeline": "Haystack RAG",
-            }
+                src = os.path.basename(src) if isinstance(src, str) else src
+            except Exception:
+                pass
+            if src:
+                sources.append(src)
+        return {"answer": answer, "documents": docs, "sources": sources, "pipeline": "Haystack 2.x RAG (Weaviate)"}
 
     def get_document_count(self) -> int:
-        """Get number of documents in store"""
-        try:
-            return self.document_store.get_document_count()
-        except Exception as e:
-            logger.error(f"❌ Error getting document count: {e}")
-            return 0
+        return self.document_store.count_documents()
 
     def get_pipeline_info(self) -> Dict[str, Any]:
-        """Get enhanced pipeline information"""
         return {
             "document_count": self.get_document_count(),
-            "pipeline_type": "Enhanced Haystack RAG Pipeline",
-            "active_pipeline": "Haystack",
+            "pipeline_type": "Haystack 2.x RAG Pipeline",
+            "active_pipeline": "Haystack 2.x",
             "components": [
-                "PreProcessor",
                 "WeaviateDocumentStore",
-                "BM25Retriever",
+                "DocumentSplitter",
+                "WeaviateRetriever",
                 "LostInTheMiddleRanker",
-                "OpenAI Direct",
+                "PromptBuilder",
+                "OpenAIGenerator",
             ],
-            "features": [
-                "Document Preprocessing",
-                "Advanced RAG",
-                "Multi-stage Ranking",
-                "Diversity Ranking",
-                "Vietnamese Language Support",
-                "OpenAI Integration",
-            ],
-            "ranking_stages": {
-                "retriever": f"Top {config.processing.top_k} documents",
-                "diversity": "Top 5 final documents",
-            },
+            "features": ["RAG", "Weaviate", "Haystack 2.x"],
             "status": "Available" if HAYSTACK_AVAILABLE else "Not Available",
         }
 
     def clear_documents(self) -> None:
-        """Clear all documents from the store"""
-        try:
-            if hasattr(self.document_store, "clear_collection"):
-                # Use WeaviateDocumentStore clear_collection method
-                self.document_store.clear_collection()
-                logger.info("✅ Cleared all documents from Weaviate collection")
-            else:
-                # Fallback: Reinitialize document store to clear all documents
-                self._init_haystack()
-                logger.info("✅ Cleared all documents from Haystack RAG")
-        except Exception as e:
-            logger.error(f"❌ Error clearing documents: {e}")
-            # Fallback to reinitialization
+        self.document_store.delete_documents()
+
+
+class FallbackRAGPipeline:
+    def __init__(self):
+        self.documents: List[Dict[str, Any]] = []
+
+    def add_documents(self, documents: List[Dict[str, Any]]):
+        self.documents.extend(documents or [])
+
+    def query(self, query: str) -> Dict[str, Any]:
+        return {"answer": "RAG fallback active.", "documents": [], "sources": [], "pipeline": "Fallback"}
+
+    def get_document_count(self) -> int:
+        return len(self.documents)
+
+    def get_pipeline_info(self) -> Dict[str, Any]:
+        return {"document_count": self.get_document_count(), "pipeline_type": "Fallback", "active_pipeline": "Fallback", "components": ["Fallback"], "features": [], "status": "Available"}
+
+
+# Global instance
+try:
+    rag_pipeline = HaystackRAGPipeline() if HAYSTACK_AVAILABLE else FallbackRAGPipeline()
+    logger.info("RAG pipeline ready")
+except Exception as e:
+    logger.error(f"Failed to init Haystack pipeline: {e}")
+    rag_pipeline = FallbackRAGPipeline()
+    logger.info("Using fallback pipeline")
+
+
+# --- Optional utilities for diagnostics ---
+def debug_vector_status() -> Dict[str, Any]:
+    """Return basic diagnostic info about collection and vector availability."""
+    info: Dict[str, Any] = {}
+    try:
+        if isinstance(rag_pipeline, HaystackRAGPipeline):
+            store = rag_pipeline.document_store
+            # count
+            info["document_count"] = store.count_documents()
+            # try one vector query with a dummy token to verify near_vector works
             try:
-                self._init_haystack()
-                logger.info("✅ Fallback: Reinitialized document store")
-            except Exception as e2:
-                logger.error(f"❌ Error in fallback reinitialization: {e2}")
-
-    def debug_documents(self) -> None:
-        """Debug function to check documents in store"""
-        try:
-            all_docs = self.document_store.get_all_documents()
-            logger.info(f"📊 Total documents in store: {len(all_docs)}")
-
-            # Show document store type
-            store_type = type(self.document_store).__name__
-            logger.info(f"📊 Document store type: {store_type}")
-
-            # If it's WeaviateDocumentStore, show collection info
-            if hasattr(self.document_store, "get_document_count"):
-                try:
-                    count = self.document_store.get_document_count()
-                    logger.info(f"📊 Weaviate collection document count: {count}")
-                except Exception as e:
-                    logger.error(f"❌ Error getting Weaviate count: {e}")
-
-            for i, doc in enumerate(all_docs[:5]):  # Show first 5 documents
-                logger.info(f"📄 Document {i+1}:")
-                logger.info(f"   Content: {doc.content[:200]}...")
-                logger.info(f"   Meta: {doc.meta}")
-                logger.info(f"   Length: {len(doc.content)} characters")
-                logger.info("---")
-
-        except Exception as e:
-            logger.error(f"❌ Error debugging documents: {e}")
+                _ = store.query_documents("test", top_k=1)
+                info["near_vector_ok"] = True
+            except Exception as e:
+                info["near_vector_ok"] = False
+                info["near_vector_error"] = str(e)
+        else:
+            info["status"] = "fallback"
+    except Exception as e:
+        info["error"] = str(e)
+    return info
 
 
-# Global pipeline instance
-rag_pipeline = HaystackRAGPipeline() if HAYSTACK_AVAILABLE else None
-
-
-def get_rag_pipeline():
-    """Get global RAG pipeline instance"""
-    global rag_pipeline
-    if rag_pipeline is None and HAYSTACK_AVAILABLE:
-        try:
-            rag_pipeline = HaystackRAGPipeline()
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize RAG pipeline: {e}")
-            return None
-    return rag_pipeline

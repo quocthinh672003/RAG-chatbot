@@ -4300,5 +4300,375 @@
     "type": "docx_zip",
     "context": "Image from DOCX media folder",
     "keywords": []
+  },
+  "docx_extracted_466": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
+    "keywords": [
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
+    ]
+  },
+  "preview_467": {
+    "path": "image_database\\screenshots\\preview_file-excelt-test.xlsx.xlsx.png",
+    "filename": "preview_file-excelt-test.xlsx.xlsx.png",
+    "source_file": "file-excelt-test.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for file-excelt-test.xlsx.xlsx",
+    "keywords": []
+  },
+  "preview_468": {
+    "path": "image_database\\screenshots\\preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "filename": "preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "source_file": "Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "keywords": []
+  },
+  "pdf_extracted_469": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_470": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_471": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
+  },
+  "preview_472": {
+    "path": "image_database\\screenshots\\preview_tieu-thu-dien-nang.md.md.png",
+    "filename": "preview_tieu-thu-dien-nang.md.md.png",
+    "source_file": "tieu-thu-dien-nang.md.md",
+    "type": "preview",
+    "context": "Document preview for tieu-thu-dien-nang.md.md",
+    "keywords": []
+  },
+  "docx_extracted_473": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
+    "keywords": [
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
+    ]
+  },
+  "preview_474": {
+    "path": "image_database\\screenshots\\preview_file-excelt-test.xlsx.xlsx.png",
+    "filename": "preview_file-excelt-test.xlsx.xlsx.png",
+    "source_file": "file-excelt-test.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for file-excelt-test.xlsx.xlsx",
+    "keywords": []
+  },
+  "preview_475": {
+    "path": "image_database\\screenshots\\preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "filename": "preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "source_file": "Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "keywords": []
+  },
+  "pdf_extracted_476": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_477": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_478": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
+  },
+  "preview_479": {
+    "path": "image_database\\screenshots\\preview_tieu-thu-dien-nang.md.md.png",
+    "filename": "preview_tieu-thu-dien-nang.md.md.png",
+    "source_file": "tieu-thu-dien-nang.md.md",
+    "type": "preview",
+    "context": "Document preview for tieu-thu-dien-nang.md.md",
+    "keywords": []
+  },
+  "docx_extracted_480": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
+    "keywords": [
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
+    ]
+  },
+  "preview_481": {
+    "path": "image_database\\screenshots\\preview_file-excelt-test.xlsx.xlsx.png",
+    "filename": "preview_file-excelt-test.xlsx.xlsx.png",
+    "source_file": "file-excelt-test.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for file-excelt-test.xlsx.xlsx",
+    "keywords": []
+  },
+  "preview_482": {
+    "path": "image_database\\screenshots\\preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "filename": "preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "source_file": "Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "keywords": []
+  },
+  "pdf_extracted_483": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_484": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_485": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
+  },
+  "preview_486": {
+    "path": "image_database\\screenshots\\preview_tieu-thu-dien-nang.md.md.png",
+    "filename": "preview_tieu-thu-dien-nang.md.md.png",
+    "source_file": "tieu-thu-dien-nang.md.md",
+    "type": "preview",
+    "context": "Document preview for tieu-thu-dien-nang.md.md",
+    "keywords": []
+  },
+  "docx_extracted_487": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
+    "keywords": [
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
+    ]
+  },
+  "preview_488": {
+    "path": "image_database\\screenshots\\preview_file-excelt-test.xlsx.xlsx.png",
+    "filename": "preview_file-excelt-test.xlsx.xlsx.png",
+    "source_file": "file-excelt-test.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for file-excelt-test.xlsx.xlsx",
+    "keywords": []
+  },
+  "preview_489": {
+    "path": "image_database\\screenshots\\preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "filename": "preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "source_file": "Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "keywords": []
+  },
+  "pdf_extracted_490": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_491": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_492": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
+  },
+  "preview_493": {
+    "path": "image_database\\screenshots\\preview_tieu-thu-dien-nang.md.md.png",
+    "filename": "preview_tieu-thu-dien-nang.md.md.png",
+    "source_file": "tieu-thu-dien-nang.md.md",
+    "type": "preview",
+    "context": "Document preview for tieu-thu-dien-nang.md.md",
+    "keywords": []
+  },
+  "docx_extracted_494": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
+    "keywords": [
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
+    ]
+  },
+  "preview_495": {
+    "path": "image_database\\screenshots\\preview_file-excelt-test.xlsx.xlsx.png",
+    "filename": "preview_file-excelt-test.xlsx.xlsx.png",
+    "source_file": "file-excelt-test.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for file-excelt-test.xlsx.xlsx",
+    "keywords": []
+  },
+  "preview_496": {
+    "path": "image_database\\screenshots\\preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "filename": "preview_Market_Research_Report_3Products_AI Tools.xlsx.xlsx.png",
+    "source_file": "Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "type": "preview",
+    "context": "Document preview for Market_Research_Report_3Products_AI Tools.xlsx.xlsx",
+    "keywords": []
+  },
+  "pdf_extracted_497": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img1.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_498": {
+    "path": "image_database\\extracted\\pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "filename": "pdf_NGUYEN-DANG-QUOC-THINH-INTERN.pdf_page1_img2.png",
+    "source_file": "NGUYEN-DANG-QUOC-THINH-INTERN.pdf",
+    "page": 1,
+    "type": "pdf_extracted",
+    "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
+    "keywords": []
+  },
+  "pdf_extracted_499": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
+  },
+  "preview_500": {
+    "path": "image_database\\screenshots\\preview_tieu-thu-dien-nang.md.md.png",
+    "filename": "preview_tieu-thu-dien-nang.md.md.png",
+    "source_file": "tieu-thu-dien-nang.md.md",
+    "type": "preview",
+    "context": "Document preview for tieu-thu-dien-nang.md.md",
+    "keywords": []
   }
 }

@@ -4,7 +4,7 @@ Centralized application initialization and service management
 """
 
 import streamlit as st
-from services.rag_pipeline import get_rag_pipeline
+from services.rag_pipeline import rag_pipeline
 from services.image_database import ImageDatabase
 from config import config
 
@@ -22,7 +22,7 @@ class AppFactory:
         print("🔄 Initializing services...")
         
         # Initialize RAG pipeline
-        self.rag_pipeline = get_rag_pipeline()
+        self.rag_pipeline = rag_pipeline
         if self.rag_pipeline is None:
             print("⚠️ Warning: RAG pipeline not available, using fallback")
         
