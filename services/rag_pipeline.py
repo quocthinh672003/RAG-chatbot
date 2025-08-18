@@ -265,11 +265,53 @@ class HaystackRAGPipeline:
                 """
 Bạn là trợ lý AI thông minh, nhiệm vụ: trả lời dựa duy nhất vào NGỮ CẢNH dưới đây. Tuyệt đối không bịa.
 
+<<<<<<< Updated upstream
 NGUYÊN TẮC:
 - Chỉ dùng thông tin trong tài liệu được cung cấp; nếu không có thông tin liên quan, nói rõ là không có trong tài liệu.
 - Mọi luận điểm quan trọng phải kèm trích nguồn cụ thể (file, trang, loại).
 - Nếu có bảng liên quan, tái tạo bảng bằng Markdown và đưa vào mảng tables.
 - Đầu ra phải là JSON hợp lệ duy nhất, không có text ngoài JSON.
+=======
+            # Choose retriever: embeddings for Weaviate, BM25 for fallback
+            store_type_name = type(self.document_store).__name__
+            self.retriever = None
+            if (
+                hasattr(self.document_store, "query_by_embedding")
+                and "Weaviate" in store_type_name
+            ):
+                # Lightweight embedding-based retriever for Weaviate
+                class WeaviateEmbeddingRetriever:
+                    def __init__(self, document_store, openai_client, top_k: int):
+                        self.document_store = document_store
+                        self.openai_client = openai_client
+                        self.top_k = top_k
+
+                    def retrieve(self, query: str):
+                        try:
+                            emb = self.openai_client.embeddings.create(
+                                model=config.models.embedding_model, input=query
+                            )
+                            q_vec = emb.data[0].embedding
+                            results = self.document_store.query_by_embedding(
+                                q_vec, top_k=self.top_k
+                            )
+                            return results or []
+                        except Exception as e:
+                            logger.error(f"❌ Weaviate embedding retrieve failed: {e}")
+                            return []
+
+                self.retriever = WeaviateEmbeddingRetriever(
+                    self.document_store, None, config.processing.top_k
+                )
+                logger.info("✅ Using embedding-based retriever with Weaviate")
+            else:
+                # Fallback: BM25 for in-memory store
+                self.retriever = BM25Retriever(
+                    document_store=self.document_store,
+                    top_k=config.processing.top_k,
+                )
+                logger.info("✅ Using BM25Retriever (fallback)")
+>>>>>>> Stashed changes
 
 NGỮ CẢNH (có trích nguồn):
 {% for doc in documents %}
@@ -308,12 +350,24 @@ QUY TẮC BỔ SUNG:
             required_variables=["query", "documents"],
         )
 
+<<<<<<< Updated upstream
         # Build pipeline
         self.pipeline = Pipeline()
         self.pipeline.add_component("retriever", self.retriever)
         self.pipeline.add_component("diversity_ranker", self.diversity_ranker)
         self.pipeline.add_component("prompt_builder", self.prompt_builder)
         self.pipeline.add_component("generator", self.generator)
+=======
+            # Inject client into custom retriever if applicable
+            try:
+                if self.retriever and hasattr(self.retriever, "openai_client"):
+                    self.retriever.openai_client = self.openai_client
+            except Exception:
+                pass
+
+            # Build pipeline
+            self.pipeline = self._build_pipeline()
+>>>>>>> Stashed changes
 
         self.pipeline.connect("retriever.documents", "diversity_ranker")
         self.pipeline.connect("diversity_ranker.documents", "prompt_builder.documents")
@@ -344,9 +398,84 @@ QUY TẮC BỔ SUNG:
             }))
         if not hs_docs:
             return
+<<<<<<< Updated upstream
         split_out = self.document_splitter.run(documents=hs_docs)
         chunks = split_out.get("documents", []) if isinstance(split_out, dict) else []
         self.document_store.write_documents(chunks)
+=======
+
+        try:
+            # Suppress ALL preprocessing logs
+            import logging
+
+            haystack_logger = logging.getLogger(
+                "haystack.nodes.preprocessor.preprocessor"
+            )
+            original_level = haystack_logger.level
+            haystack_logger.setLevel(logging.CRITICAL)
+
+            # Also suppress other noisy loggers
+            logging.getLogger("haystack.nodes.retriever").setLevel(logging.CRITICAL)
+            logging.getLogger("haystack.document_stores").setLevel(logging.CRITICAL)
+            logging.getLogger("unstructured").setLevel(logging.CRITICAL)
+            logging.getLogger("pdfminer").setLevel(logging.CRITICAL)
+            logging.getLogger("PIL").setLevel(logging.CRITICAL)
+
+            # Debug: Log before preprocessing
+            logger.info(f"🔍 Before preprocessing: {len(haystack_docs)} documents")
+            if haystack_docs:
+                logger.info(
+                    f"🔍 First doc content: {haystack_docs[0].content[:100]}..."
+                )
+
+            # Use preprocessing to create proper chunks
+            preprocessed_docs = self.preprocessor.run(haystack_docs)
+            if isinstance(preprocessed_docs, dict) and "documents" in preprocessed_docs:
+                preprocessed_docs = preprocessed_docs["documents"]
+            logger.info(f"🔍 Preprocessed {len(preprocessed_docs)} documents")
+
+            # If using Weaviate, create embeddings before writing
+            store_type_name = type(self.document_store).__name__
+            if (
+                hasattr(self.document_store, "query_by_embedding")
+                and "Weaviate" in store_type_name
+            ):
+                try:
+                    contents = [doc.content for doc in preprocessed_docs]
+                    if contents:
+                        emb_resp = self.openai_client.embeddings.create(
+                            model=config.models.embedding_model, input=contents
+                        )
+                        vectors = [item.embedding for item in emb_resp.data]
+                        for doc, vec in zip(preprocessed_docs, vectors):
+                            try:
+                                doc.embedding = vec
+                            except Exception:
+                                pass
+                except Exception as e:
+                    logger.error(f"❌ Failed to embed documents for Weaviate: {e}")
+
+            # Add preprocessed documents to document store
+            self.document_store.write_documents(preprocessed_docs)
+
+            # Verify documents were added (minimal logging)
+            try:
+                all_docs = self.document_store.get_all_documents()
+                logger.info(
+                    f"✅ Added {len(preprocessed_docs)} documents to store (total: {len(all_docs)})"
+                )
+            except Exception:
+                pass  # Silently ignore verification errors
+
+        except Exception as e:
+            logger.error(f"❌ Error adding documents: {e}")
+            import traceback
+
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        finally:
+            # Restore logging levels
+            haystack_logger.setLevel(original_level)
+>>>>>>> Stashed changes
 
     def query(self, query: str) -> Dict[str, Any]:
         if not query or not query.strip():

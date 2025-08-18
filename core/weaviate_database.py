@@ -6,6 +6,11 @@ Thay thế Qdrant cho tương thích tốt hơn với Haystack
 import os
 import logging
 from typing import Optional
+from dotenv import load_dotenv
+from config import config
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +42,16 @@ def get_weaviate_document_store():
             api_key=WEAVIATE_API_KEY,
             index="RAG-chatbot-docs",
             similarity="cosine",
+<<<<<<< Updated upstream
             embedding_dim=1536,  # Match OpenAI embedding dimension
             timeout_config=(30, 60),  # (connect_timeout, read_timeout)
             additional_headers={
                 "X-OpenAI-Api-Key": os.getenv("OPENAI_API_KEY")
             }
+=======
+            embedding_dim=config.models.embedding_dimension,
+            timeout_config=(60, 120),  # (connect_timeout, read_timeout) - tăng timeout
+>>>>>>> Stashed changes
         )
 
         logger.info("✅ Weaviate Cloud Document Store initialized")
@@ -63,5 +73,7 @@ def get_document_store():
 
         logger.warning("⚠️ Falling back to InMemoryDocumentStore")
         return InMemoryDocumentStore(
-            embedding_dim=768, similarity="cosine", use_bm25=True
+            embedding_dim=config.models.embedding_dimension,
+            similarity="cosine",
+            use_bm25=True,
         )

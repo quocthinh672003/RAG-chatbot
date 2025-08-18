@@ -671,7 +671,6 @@ def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> 
                     status_container.info(
                         f"🖼️ Đã trích xuất {len(images)} ảnh từ {fixed_filename}"
                     )
-
             else:
                 status_container.warning(f"⚠️ Không thể xử lý: {fixed_filename}")
 
@@ -774,6 +773,7 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
             else:
                 st.markdown(displayed_answer, unsafe_allow_html=True)
 
+<<<<<<< Updated upstream
             # Only show images when the user explicitly asks about images
             image_query = any(k in (prompt or "").lower() for k in ["hình", "ảnh", "hình ảnh", "image", "picture", "photo"])
             if image_query and ("Không tìm thấy thông tin" not in result.get("answer", "")):
@@ -870,7 +870,35 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
                     )
             except Exception as e:
                 logger.warning(f"Could not persist chat to Weaviate: {e}")
+=======
+                # Store sources for later display
+                sources = result.get("sources", [])
+                if sources:
+                    with st.expander("📚 Nguồn tham khảo"):
+                        # Lọc và hiển thị tên file gốc duy nhất
+                        unique_sources = []
+                        for source in sources:
+                            if source not in unique_sources:
+                                unique_sources.append(source)
 
+                        for i, source in enumerate(unique_sources):
+                            st.write(f"**📄 {source}**")
+
+                # Add to chat history and save
+                if "chat_history" not in st.session_state:
+                    st.session_state.chat_history = []
+>>>>>>> Stashed changes
+
+                st.session_state.chat_history.append(
+                    {
+                        "question": prompt,
+                        "answer": result["answer"],
+                        "sources": sources,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
+                # Save chat history after each interaction
+                save_chat_history(st.session_state.chat_history)
         except Exception as e:
             st.error(f"❌ Lỗi: {str(e)}")
 
