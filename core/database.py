@@ -2,11 +2,10 @@
 Database service
 """
 
-from typing import List, Dict, Any
+from typing import List
 from haystack import Document
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
-import numpy as np
 from config import config
 
 
@@ -96,7 +95,8 @@ class QdrantDocumentStore:
         """Get all documents"""
         try:
             result = self.client.scroll(
-                collection_name=self.collection_name, limit=10000  # Adjust as needed
+                collection_name=self.collection_name,
+                limit=10000,  # Adjust as needed
             )
 
             documents = []

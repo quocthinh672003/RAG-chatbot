@@ -5,7 +5,6 @@ Thay thế Qdrant cho tương thích tốt hơn với Haystack
 
 import os
 import logging
-from typing import Optional
 from dotenv import load_dotenv
 from config import config
 
@@ -27,12 +26,13 @@ def get_weaviate_document_store():
         WEAVIATE_API_KEY = os.getenv("WEAVIATE_API_KEY", "your-api-key")
 
         # Remove any trailing slashes and ensure proper URL format
-        if WEAVIATE_URL.endswith('/'):
+        if WEAVIATE_URL.endswith("/"):
             WEAVIATE_URL = WEAVIATE_URL[:-1]
 
         # For Weaviate Cloud, we need to use the full URL without port
         # Extract host from URL
         from urllib.parse import urlparse
+
         parsed_url = urlparse(WEAVIATE_URL)
         host = parsed_url.netloc
 
@@ -42,16 +42,9 @@ def get_weaviate_document_store():
             api_key=WEAVIATE_API_KEY,
             index="RAG-chatbot-docs",
             similarity="cosine",
-<<<<<<< Updated upstream
-            embedding_dim=1536,  # Match OpenAI embedding dimension
-            timeout_config=(30, 60),  # (connect_timeout, read_timeout)
-            additional_headers={
-                "X-OpenAI-Api-Key": os.getenv("OPENAI_API_KEY")
-            }
-=======
             embedding_dim=config.models.embedding_dimension,
-            timeout_config=(60, 120),  # (connect_timeout, read_timeout) - tăng timeout
->>>>>>> Stashed changes
+            timeout_config=(60, 120),  # (connect_timeout, read_timeout)
+            additional_headers={"X-OpenAI-Api-Key": os.getenv("OPENAI_API_KEY")},
         )
 
         logger.info("✅ Weaviate Cloud Document Store initialized")
