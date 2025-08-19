@@ -115,7 +115,7 @@ class DocumentProcessor:
             elif self.use_langchain:
                 return self._process_langchain(file_path)
         except Exception as e:
-            print(f"❌ Error processing {file_path}: {e}")
+            logger.error(f"Error processing {file_path}: {e}")
             return []
 
     def _process_haystack(self, file_path: str) -> List:
@@ -124,7 +124,7 @@ class DocumentProcessor:
         documents = converter.convert(file_path)
         
         if not documents:
-            print(f"⚠️ No documents extracted from {file_path}")
+            logger.warning(f"No documents extracted from {file_path}")
             return []
         
         # Add metadata
@@ -134,20 +134,16 @@ class DocumentProcessor:
         
         # Preprocess documents
         processed_docs = self.preprocessor.process(documents)
-        print(f"✅ Processed {len(processed_docs)} chunks from {file_path} (Haystack)")
         return processed_docs
 
     def _process_langchain(self, file_path: str) -> List:
         """Process with LangChain"""
-        print(f"🔍 Processing {file_path} with LangChain...")
         
         loader = self._get_langchain_loader(file_path)
         documents = loader.load()
         
-        print(f"📄 Loaded {len(documents)} documents from {file_path}")
-        
         if not documents:
-            print(f"⚠️ No documents extracted from {file_path}")
+            logger.warning(f"No documents extracted from {file_path}")
             return []
         
         # Add metadata
@@ -157,12 +153,6 @@ class DocumentProcessor:
         
         # Split documents
         split_docs = self.text_splitter.split_documents(documents)
-        print(f"✅ Processed {len(split_docs)} chunks from {file_path} (LangChain)")
-        
-        # Debug: show first chunk content
-        if split_docs:
-            first_chunk = split_docs[0].page_content[:200] + "..." if len(split_docs[0].page_content) > 200 else split_docs[0].page_content
-            print(f"📝 First chunk preview: {first_chunk}")
         
         return split_docs
 
@@ -232,7 +222,6 @@ class DocumentService:
             # Convert to LangChain documents
             documents = self._convert_to_langchain_documents(document_structure)
             
-            logger.info(f"✅ Converted {filename} to {len(elements)} elements")
             return documents
             
         except Exception as e:
@@ -452,12 +441,13 @@ class DocumentService:
         markdown_tables: List[str] = []
         while i < len(lines):
             line = lines[i].strip()
-            trigger = line.lower().startswith("bảng")
+            # Check for table trigger - "Bảng:" or "Bảng "
+            trigger = line.lower().startswith("bảng") and (":" in line or " " in line)
             if trigger:
-                # Collect until blank line
+                # Collect until blank line or next section
                 block: List[str] = []
                 i += 1
-                while i < len(lines) and lines[i].strip():
+                while i < len(lines) and lines[i].strip() and not lines[i].strip().startswith(("1.", "2.", "3.", "4.", "5.")):
                     block.append(lines[i])
                     i += 1
                 md = self._lines_to_markdown_table(block)
@@ -472,7 +462,8 @@ class DocumentService:
             return None
         import re as _re
         def split_cols(s: str) -> List[str]:
-            parts = [p.strip() for p in _re.split(r"\t+|\s{2,}", s) if p.strip()]
+            # Split by tabs or multiple spaces, but be more flexible
+            parts = [p.strip() for p in _re.split(r"\t+|\s{3,}", s) if p.strip()]
             return parts
         rows = [split_cols(l) for l in block_lines if split_cols(l)]
         if not rows or len(rows[0]) < 2:

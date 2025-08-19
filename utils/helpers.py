@@ -3,8 +3,11 @@ Helper utilities for RAG Chatbot
 """
 
 import os
+import logging
 from typing import List, Dict, Any
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 def get_file_extension(file_path: str) -> str:
@@ -71,5 +74,5 @@ def safe_read_file(file_path: str, encoding: str = "utf-8") -> str:
         with open(file_path, "r", encoding=encoding) as f:
             return f.read()
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        logger.error(f"Error reading file {file_path}: {e}")
         return ""

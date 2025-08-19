@@ -19,8 +19,12 @@ Công nghệ sử dụng:
 import os
 import json
 import shutil
+import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class ImageDatabase:
     """
@@ -85,16 +89,24 @@ class ImageDatabase:
             with open(self.metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(self.metadata, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Error saving metadata: {e}")
+            logger.error(f"Error saving metadata: {e}")
+    
+    def _is_file_already_processed(self, source_filename: str) -> bool:
+        """Kiểm tra xem file đã được xử lý chưa để tránh duplicate"""
+        for img_data in self.metadata.values():
+            if img_data.get('source_file') == source_filename:
+                return True
+        return False
     
     def extract_images_from_any_file(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
         """
-        Trích xuất ảnh từ BẤT KỲ loại file nào sử dụng nhiều phương pháp
+        Trích xuất ảnh từ BẤT KỲ loại file nào sử dụng phương pháp tối ưu
         
-        Logic:
-        1. Thử Unstructured library (toàn diện nhất)
-        2. Thử extractor riêng cho từng loại file
-        3. Tạo screenshot nếu không tìm thấy ảnh
+        Logic tối ưu:
+        1. Chỉ trích xuất ảnh thực sự từ nội dung file
+        2. Không tạo preview screenshots (tiết kiệm dung lượng)
+        3. Giới hạn số lượng ảnh trích xuất (tối đa 5 ảnh/file)
+        4. Ưu tiên ảnh có context rõ ràng
         
         Args:
             file_path: Đường dẫn đến file
@@ -104,55 +116,59 @@ class ImageDatabase:
             List[Dict]: Danh sách ảnh đã trích xuất với metadata
         """
         extracted_images = []
+
+        # Normalize source filename to avoid duplicate extensions inside PNG names
+        def _normalize_double_ext(name: str) -> str:
+            if not isinstance(name, str):
+                return ""
+            exts = [".pdf", ".docx", ".xlsx", ".md", ".pptx", ".csv", ".txt"]
+            changed = True
+            while changed:
+                changed = False
+                for ext in exts:
+                    double = f"{ext}{ext}"
+                    if double in name:
+                        name = name.replace(double, ext)
+                        changed = True
+            return name
+
+        source_filename = _normalize_double_ext(source_filename)
         
-        # Method 1: Thử Unstructured library (toàn diện nhất)
-        # Unstructured có thể xử lý nhiều loại file và trích xuất ảnh tốt
-        unstructured_images = self._extract_with_unstructured(file_path, source_filename)
-        if unstructured_images:
-            extracted_images.extend(unstructured_images)
-            print(f"Unstructured extracted {len(unstructured_images)} images")
+        # Kiểm tra xem file này đã được xử lý chưa (tránh duplicate)
+        if self._is_file_already_processed(source_filename):
+            logger.info(f"File {source_filename} đã được xử lý, bỏ qua")
+            return []
         
-        # Method 2: Thử extractor riêng cho từng loại file
-        # Dựa vào extension để chọn phương pháp phù hợp
+        # Chọn phương pháp trích xuất dựa trên loại file
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.pdf':
-            # PDF: Sử dụng PyMuPDF để trích xuất ảnh embedded
+            # PDF: Chỉ sử dụng PyMuPDF để trích xuất ảnh embedded
             pdf_images = self._extract_from_pdf(file_path, source_filename)
-            extracted_images.extend(pdf_images)
-            print(f"PDF extractor found {len(pdf_images)} images")
+            extracted_images.extend(pdf_images[:5])  # Giới hạn 5 ảnh
         
         elif file_ext in ['.docx', '.doc']:
-            # DOCX: Sử dụng python-docx hoặc ZIP extraction
+            # DOCX: Chỉ sử dụng python-docx (không dùng ZIP extraction)
             docx_images = self._extract_from_docx(file_path, source_filename)
-            extracted_images.extend(docx_images)
-            print(f"DOCX extractor found {len(docx_images)} images")
+            extracted_images.extend(docx_images[:5])  # Giới hạn 5 ảnh
         
         elif file_ext in ['.xlsx', '.xls']:
-            # Excel: Sử dụng ZIP extraction (Excel là ZIP file)
+            # Excel: Chỉ trích xuất nếu thực sự cần thiết
             excel_images = self._extract_from_excel(file_path, source_filename)
-            extracted_images.extend(excel_images)
-            print(f"Excel extractor found {len(excel_images)} images")
+            extracted_images.extend(excel_images[:3])  # Giới hạn 3 ảnh
         
         elif file_ext in ['.pptx', '.ppt']:
-            # PowerPoint: Sử dụng ZIP extraction (PPTX là ZIP file)
+            # PowerPoint: Chỉ trích xuất nếu thực sự cần thiết
             ppt_images = self._extract_from_powerpoint(file_path, source_filename)
-            extracted_images.extend(ppt_images)
-            print(f"PowerPoint extractor found {len(ppt_images)} images")
+            extracted_images.extend(ppt_images[:3])  # Giới hạn 3 ảnh
         
         elif file_ext in ['.html', '.htm']:
-            # HTML: Sử dụng BeautifulSoup để tìm thẻ img
+            # HTML: Chỉ trích xuất ảnh từ thẻ img
             html_images = self._extract_from_html(file_path, source_filename)
-            extracted_images.extend(html_images)
-            print(f"HTML extractor found {len(html_images)} images")
+            extracted_images.extend(html_images[:5])  # Giới hạn 5 ảnh
         
-        # Method 3: Tạo document screenshot nếu không tìm thấy ảnh
-        # Fallback: Tạo ảnh preview của tài liệu
-        if not extracted_images:
-            screenshot = self._create_document_screenshot(file_path, source_filename)
-            if screenshot:
-                extracted_images.append(screenshot)
-                print("Created document screenshot as fallback")
+        # KHÔNG tạo preview screenshots (tiết kiệm dung lượng)
+        # Chỉ lưu ảnh thực sự từ nội dung file
         
         # Lưu tất cả ảnh đã trích xuất vào database
         for img in extracted_images:
@@ -160,7 +176,6 @@ class ImageDatabase:
         
         # Lưu metadata
         self._save_metadata()
-        print(f"Total extracted {len(extracted_images)} images from {source_filename}")
         return extracted_images
     
     def _extract_with_unstructured(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
@@ -202,16 +217,16 @@ class ImageDatabase:
                                 "keywords": self._extract_keywords_from_context(context)
                             })
                     except Exception as e:
-                        print(f"Error processing unstructured image {i}: {e}")
+                        logger.error(f"Error processing unstructured image {i}: {e}")
                         continue
             
             return extracted_images
             
         except ImportError:
-            print("Unstructured library not available")
+            logger.warning("Unstructured library not available")
             return []
         except Exception as e:
-            print(f"Error with unstructured extraction: {e}")
+            logger.error(f"Error with unstructured extraction: {e}")
             return []
     
     def _extract_from_pdf(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
@@ -235,7 +250,7 @@ class ImageDatabase:
         try:
             import fitz  # PyMuPDF
         except ImportError:
-            print("PyMuPDF not available - cannot extract PDF images")
+            logger.warning("PyMuPDF not available - cannot extract PDF images")
             return []
         
         extracted_images = []
@@ -304,26 +319,24 @@ class ImageDatabase:
                         pix = None  # Giải phóng bộ nhớ
                         
                     except Exception as e:
-                        print(f"Error extracting PDF image: {e}")
+                        logger.error(f"Error extracting PDF image: {e}")
                         continue
             
             doc.close()  # Đóng PDF file
             
         except Exception as e:
-            print(f"Error extracting from PDF: {e}")
+            logger.error(f"Error extracting from PDF: {e}")
         
         return extracted_images
     
     def _extract_from_docx(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
-        """Extract images from DOCX files"""
+        """Extract images from DOCX files - Tối ưu hóa để tránh duplicate"""
         try:
             from docx import Document
-            import zipfile
-            import io
             
             extracted_images = []
             
-            # Method 1: Try python-docx
+            # Chỉ sử dụng python-docx (không dùng ZIP extraction để tránh duplicate)
             try:
                 doc = Document(file_path)
                 
@@ -333,18 +346,22 @@ class ImageDatabase:
                     full_text.append(paragraph.text)
                 document_text = "\n".join(full_text)
                 
+                # Giới hạn chỉ trích xuất tối đa 5 ảnh
+                image_count = 0
+                max_images = 5
+                
                 for rel in doc.part.rels.values():
-                    if "image" in rel.target_ref:
+                    if "image" in rel.target_ref and image_count < max_images:
                         try:
                             img_data = rel.target_part.blob
-                            img_filename = f"docx_{source_filename}_img{len(extracted_images)+1}.png"
+                            img_filename = f"docx_{source_filename}_img{image_count+1}.png"
                             img_path = os.path.join(self.images_dir, "extracted", img_filename)
                             
                             with open(img_path, "wb") as img_file:
                                 img_file.write(img_data)
                             
                             # Try to find relevant context for this image
-                            context = self._find_image_context(document_text, len(extracted_images))
+                            context = self._find_image_context(document_text, image_count)
                             
                             extracted_images.append({
                                 "path": img_path,
@@ -354,47 +371,23 @@ class ImageDatabase:
                                 "context": context,
                                 "keywords": self._extract_keywords_from_context(context)
                             })
+                            
+                            image_count += 1
+                            
                         except Exception as e:
-                            print(f"Error extracting DOCX image: {e}")
+                            logger.error(f"Error extracting DOCX image: {e}")
                             continue
+                            
             except Exception as e:
-                print(f"Error with python-docx: {e}")
-            
-            # Method 2: Try direct ZIP extraction (DOCX is a ZIP file)
-            if not extracted_images:
-                try:
-                    with zipfile.ZipFile(file_path, 'r') as zip_file:
-                        for file_info in zip_file.filelist:
-                            if file_info.filename.startswith('word/media/'):
-                                try:
-                                    img_data = zip_file.read(file_info.filename)
-                                    img_filename = f"docx_zip_{source_filename}_{os.path.basename(file_info.filename)}"
-                                    img_path = os.path.join(self.images_dir, "extracted", img_filename)
-                                    
-                                    with open(img_path, "wb") as img_file:
-                                        img_file.write(img_data)
-                                    
-                                    extracted_images.append({
-                                        "path": img_path,
-                                        "filename": img_filename,
-                                        "source_file": source_filename,
-                                        "type": "docx_zip",
-                                        "context": "Image from DOCX media folder",
-                                        "keywords": []
-                                    })
-                                except Exception as e:
-                                    print(f"Error extracting ZIP image: {e}")
-                                    continue
-                except Exception as e:
-                    print(f"Error with ZIP extraction: {e}")
+                logger.error(f"Error with python-docx: {e}")
             
             return extracted_images
             
         except ImportError:
-            print("python-docx not available")
+            logger.warning("python-docx not available")
             return []
         except Exception as e:
-            print(f"Error extracting from DOCX: {e}")
+            logger.error(f"Error extracting from DOCX: {e}")
             return []
     
     def _extract_from_excel(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
@@ -425,13 +418,13 @@ class ImageDatabase:
                                 "keywords": []
                             })
                         except Exception as e:
-                            print(f"Error extracting Excel image: {e}")
+                            logger.error(f"Error extracting Excel image: {e}")
                             continue
             
             return extracted_images
             
         except Exception as e:
-            print(f"Error extracting from Excel: {e}")
+            logger.error(f"Error extracting from Excel: {e}")
             return []
     
     def _extract_from_powerpoint(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
@@ -462,13 +455,13 @@ class ImageDatabase:
                                 "keywords": []
                             })
                         except Exception as e:
-                            print(f"Error extracting PowerPoint image: {e}")
+                            logger.error(f"Error extracting PowerPoint image: {e}")
                             continue
             
             return extracted_images
             
         except Exception as e:
-            print(f"Error extracting from PowerPoint: {e}")
+            logger.error(f"Error extracting from PowerPoint: {e}")
             return []
     
     def _extract_from_html(self, file_path: str, source_filename: str) -> List[Dict[str, Any]]:
@@ -526,16 +519,16 @@ class ImageDatabase:
                         })
                         
                 except Exception as e:
-                    print(f"Error extracting HTML image: {e}")
+                    logger.error(f"Error extracting HTML image: {e}")
                     continue
             
             return extracted_images
             
         except ImportError:
-            print("BeautifulSoup not available")
+            logger.warning("BeautifulSoup not available")
             return []
         except Exception as e:
-            print(f"Error extracting from HTML: {e}")
+            logger.error(f"Error extracting from HTML: {e}")
             return []
     
     def _create_document_screenshot(self, file_path: str, source_filename: str) -> Optional[Dict[str, Any]]:
@@ -573,7 +566,7 @@ class ImageDatabase:
             }
             
         except Exception as e:
-            print(f"Error creating document preview: {e}")
+            logger.error(f"Error creating document preview: {e}")
             return None
     
     def _save_image_to_database(self, img_data: Dict[str, Any]):
@@ -657,6 +650,10 @@ class ImageDatabase:
         
         # Duyệt qua tất cả ảnh trong metadata
         for image_id, image_data in self.metadata.items():
+            # Check if image file actually exists
+            if not os.path.exists(image_data.get("path", "")):
+                continue  # Skip images that don't exist
+                
             score = 0  # Điểm số của ảnh này
             context = image_data.get("context", "").lower()  # Context của ảnh
             keywords = image_data.get("keywords", [])        # Keywords của ảnh
@@ -707,10 +704,12 @@ class ImageDatabase:
         images = []
         for image_id, image_data in self.metadata.items():
             if image_data.get("source_file") == source_filename:
-                images.append({
-                    "id": image_id,
-                    **image_data
-                })
+                # Check if image file actually exists
+                if os.path.exists(image_data.get("path", "")):
+                    images.append({
+                        "id": image_id,
+                        **image_data
+                    })
         return images
     
     def list_all_images(self) -> List[Dict[str, Any]]:
@@ -723,6 +722,27 @@ class ImageDatabase:
             for image_id, image_data in self.metadata.items()
         ]
     
+    def remove_images_by_source(self, source_filename: str) -> int:
+        """Remove all images and metadata entries that belong to a given source file.
+        Returns number of removed entries.
+        """
+        to_delete_keys = []
+        for image_id, image_data in list(self.metadata.items()):
+            if image_data.get("source_file") == source_filename:
+                # delete image file if exists
+                img_path = image_data.get("path", "")
+                try:
+                    if img_path and os.path.exists(img_path):
+                        os.remove(img_path)
+                except Exception as e:
+                    logger.warning(f"Could not delete image file {img_path}: {e}")
+                to_delete_keys.append(image_id)
+        for key in to_delete_keys:
+            self.metadata.pop(key, None)
+        if to_delete_keys:
+            self._save_metadata()
+        return len(to_delete_keys)
+
     def clear_database(self):
         """Clear all images and metadata"""
         try:
@@ -731,9 +751,8 @@ class ImageDatabase:
                 shutil.rmtree(self.images_dir)
             self.metadata = {}
             self._ensure_database_exists()
-            print("Image database cleared")
         except Exception as e:
-            print(f"Error clearing database: {e}")
+            logger.error(f"Error clearing database: {e}")
 
 
 # Global instance

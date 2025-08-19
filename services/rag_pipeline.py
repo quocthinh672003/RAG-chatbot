@@ -263,47 +263,48 @@ class HaystackRAGPipeline:
         self.prompt_builder = PromptBuilder(
             template=(
                 """
-Bạn là trợ lý AI thông minh, nhiệm vụ: trả lời dựa duy nhất vào NGỮ CẢNH dưới đây. Tuyệt đối không bịa.
+                Bạn là trợ lý AI thông minh, nhiệm vụ: trả lời dựa duy nhất vào NGỮ CẢNH dưới đây. Tuyệt đối không bịa.
 
-NGUYÊN TẮC:
-- Chỉ dùng thông tin trong tài liệu được cung cấp; nếu không có thông tin liên quan, nói rõ là không có trong tài liệu.
-- Mọi luận điểm quan trọng phải kèm trích nguồn cụ thể (file, trang, loại).
-- Nếu có bảng liên quan, tái tạo bảng bằng Markdown và đưa vào mảng tables.
-- Đầu ra phải là JSON hợp lệ duy nhất, không có text ngoài JSON.
+                NGUYÊN TẮC:
+                - Chỉ dùng thông tin trong tài liệu được cung cấp; nếu không có thông tin liên quan, nói rõ là không có trong tài liệu.
+                - Mọi luận điểm quan trọng phải kèm trích nguồn cụ thể (file, trang, loại).
+                - Nếu có bảng liên quan, tái tạo bảng bằng Markdown và đưa vào mảng tables.
+                - Đầu ra phải là JSON hợp lệ duy nhất, không có text ngoài JSON.
 
-NGỮ CẢNH (có trích nguồn):
-{% for doc in documents %}
-=== DOC {{ loop.index }} ===
-SOURCE: {{ doc.meta.source | default('unknown') }} | PAGE: {{ doc.meta.page | default(0) }} | TYPE: {{ doc.meta.file_type | default('unknown') }}
-CONTENT:
-{{ doc.content }}
-{% endfor %}
+                NGỮ CẢNH (có trích nguồn):
+                {% for doc in documents %}
+                === DOC {{ loop.index }} ===
+                SOURCE: {{ doc.meta.source | default('unknown') }} | PAGE: {{ doc.meta.page | default(0) }} | TYPE: {{ doc.meta.file_type | default('unknown') }}
+                CONTENT:
+                {{ doc.content }}
+                {% endfor %}
 
-CÂU HỎI: {{ query }}
+                CÂU HỎI: {{ query }}
 
-YÊU CẦU ĐẦU RA (JSON):
-{
-  "answer": "Câu trả lời đầy đủ trực tiếp cho câu hỏi, ưu tiên chính xác và trung thực. Nếu không có thông tin trong tài liệu, ghi rõ.",
-  "details": "Giải thích chi tiết dựa trên các đoạn trích phù hợp trong NGỮ CẢNH. Không thêm thông tin ngoài tài liệu.",
-  "tables": [
-    "(Tùy chọn) Bảng ở dạng Markdown nếu có bảng liên quan trong tài liệu, bảo toàn đầy đủ dữ liệu và format."
-  ],
-  "sources": [
-    {
-      "file": "Tên file từ doc.meta.source",
-      "page": "Số trang từ doc.meta.page (nếu có)",
-      "type": "doc.meta.file_type",
-      "snippet": "Trích đoạn ngắn minh họa (nguyên văn)"
-    }
-  ],
-  "limitations": "Nêu rõ giới hạn dữ liệu, phần thiếu, hoặc mâu thuẫn nếu có.",
-  "follow_up_questions": ["(Tùy chọn) Gợi ý các câu hỏi tiếp theo nếu cần"]
-}
+                YÊU CẦU ĐẦU RA (JSON):
+                {
+                  "answer": "Câu trả lời đầy đủ trực tiếp cho câu hỏi, ưu tiên chính xác và trung thực. Nếu không có thông tin trong tài liệu, ghi rõ.",
+                  "details": "Giải thích chi tiết dựa trên các đoạn trích phù hợp trong NGỮ CẢNH. Không thêm thông tin ngoài tài liệu.",
+                  "tables": [
+                    "(BẮT BUỘC nếu có bảng liên quan) Bảng ở dạng Markdown hoàn chỉnh với headers và data rows. Nếu tìm thấy bảng trong NGỮ CẢNH, phải tái tạo nguyên vẹn."
+                  ],
+                  "sources": [
+                    {
+                      "file": "Tên file từ doc.meta.source",
+                      "page": "Số trang từ doc.meta.page (nếu có)",
+                      "type": "doc.meta.file_type",
+                      "snippet": "Trích đoạn ngắn minh họa (nguyên văn)"
+                    }
+                  ],
+                  "limitations": "Nêu rõ giới hạn dữ liệu, phần thiếu, hoặc mâu thuẫn nếu có.",
+                  "follow_up_questions": ["(Tùy chọn) Gợi ý các câu hỏi tiếp theo nếu cần"]
+                }
 
-QUY TẮC BỔ SUNG:
-- Nếu không tìm thấy thông tin liên quan: đặt short_answer nêu rõ không có dữ liệu trong tài liệu; details rỗng; sources là mảng rỗng; tables rỗng.
-- Tuyệt đối không chèn Markdown hay văn bản ngoài JSON. Trả về đúng một JSON duy nhất.
-"""
+                QUY TẮC BỔ SUNG:
+                - Nếu không tìm thấy thông tin liên quan: đặt answer nêu rõ không có dữ liệu trong tài liệu; details rỗng; sources là mảng rỗng; tables rỗng.
+                - Nếu có bảng trong NGỮ CẢNH và câu hỏi liên quan đến bảng: BẮT BUỘC phải tái tạo bảng trong "tables" array.
+                - Tuyệt đối không chèn Markdown hay văn bản ngoài JSON. Trả về đúng một JSON duy nhất.
+                """
             ),
             required_variables=["query", "documents"],
         )
@@ -427,33 +428,11 @@ class FallbackRAGPipeline:
 # Global instance
 try:
     rag_pipeline = HaystackRAGPipeline() if HAYSTACK_AVAILABLE else FallbackRAGPipeline()
-    logger.info("RAG pipeline ready")
 except Exception as e:
     logger.error(f"Failed to init Haystack pipeline: {e}")
     rag_pipeline = FallbackRAGPipeline()
-    logger.info("Using fallback pipeline")
 
 
-# --- Optional utilities for diagnostics ---
-def debug_vector_status() -> Dict[str, Any]:
-    """Return basic diagnostic info about collection and vector availability."""
-    info: Dict[str, Any] = {}
-    try:
-        if isinstance(rag_pipeline, HaystackRAGPipeline):
-            store = rag_pipeline.document_store
-            # count
-            info["document_count"] = store.count_documents()
-            # try one vector query with a dummy token to verify near_vector works
-            try:
-                _ = store.query_documents("test", top_k=1)
-                info["near_vector_ok"] = True
-            except Exception as e:
-                info["near_vector_ok"] = False
-                info["near_vector_error"] = str(e)
-        else:
-            info["status"] = "fallback"
-    except Exception as e:
-        info["error"] = str(e)
-    return info
+
 
 

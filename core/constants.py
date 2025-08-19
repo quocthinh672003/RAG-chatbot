@@ -17,18 +17,13 @@ Các nhóm constants:
 
 # File types supported - Các định dạng file được hỗ trợ
 SUPPORTED_FILE_TYPES = [
-    "pdf",  # Portable Document Format
-    "docx",  # Microsoft Word Document
-    "txt",  # Plain Text File
-    "md",  # Markdown File
+    "pdf",       # Portable Document Format
+    "docx",      # Microsoft Word Document
+    "txt",       # Plain Text File
+    "md",        # Markdown File
     "markdown",  # Markdown File (alternative extension)
-    "xlsx",  # Microsoft Excel Spreadsheet
-    "xls",  # Microsoft Excel (legacy)
-    "pptx",  # Microsoft PowerPoint Presentation
-    "html",  # HyperText Markup Language
-    "htm",  # HTML (alternative extension)
-    "json",  # JavaScript Object Notation
-    "csv",  # Comma-Separated Values
+    "xlsx",      # Microsoft Excel Spreadsheet
+    "xls",       # Microsoft Excel (legacy)
 ]
 
 # Default processing settings - Cấu hình xử lý mặc định

@@ -44,7 +44,7 @@ def get_weaviate_document_store():
             }
         )
 
-        logger.info("✅ Weaviate Cloud Document Store initialized")
+
         return document_store
 
     except Exception as e:

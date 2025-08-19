@@ -60,6 +60,13 @@ from functools import lru_cache
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Reduce noisy third‑party logs (httpx/OpenAI/Weaviate/Haystack)
+for _name in ["httpx", "haystack", "weaviate", "openai", "urllib3"]:
+    try:
+        logging.getLogger(_name).setLevel(logging.WARNING)
+    except Exception:
+        pass
+
 # Load environment variables
 from dotenv import load_dotenv
 
@@ -85,6 +92,15 @@ CHAT_HISTORY_FILE = "chat_history.json"
 UPLOADS_DIR = "uploads"
 MAX_FILENAME_LENGTH = 25
 
+
+def safe_rerun() -> None:
+    """Cross-version rerun wrapper for Streamlit."""
+    try:
+        fn = getattr(st, "rerun", None) or getattr(st, "experimental_rerun", None)
+        if callable(fn):
+            fn()
+    except Exception:
+        pass
 
 def download_nltk_data():
     """
@@ -256,21 +272,7 @@ def initialize_services():
     return app_factory
 
 
-def debug_session_state():
-    """Debug session state with minimal output"""
-    # Only log if there are issues
-    if not st.session_state.get("processed_files"):
-        logger.info("📄 No files in session state")
 
-    # Only show files in uploads dir if needed for debugging
-    if os.path.exists(UPLOADS_DIR):
-        files = [
-            f
-            for f in os.listdir(UPLOADS_DIR)
-            if os.path.isfile(os.path.join(UPLOADS_DIR, f))
-        ]
-        if not files:
-            logger.info("📁 Uploads directory is empty")
 
 
 
@@ -322,26 +324,13 @@ def main():
     image_database = app_factory.get_image_database()
     config = app_factory.get_config()
 
-    # Debug session state
-    debug_session_state()
+
 
     # DISABLED: Auto-reload documents to prevent infinite loop
     # Only set flag to prevent future calls
     if not st.session_state.get("auto_reloaded", False):
         st.session_state.auto_reloaded = True
         
-    # MANUAL: Load documents only once when needed
-    if not st.session_state.get("processed_files") and os.path.exists(UPLOADS_DIR):
-        files = [f for f in os.listdir(UPLOADS_DIR) if os.path.isfile(os.path.join(UPLOADS_DIR, f))]
-        if files and not st.session_state.get("_manual_loaded", False):
-            st.session_state._manual_loaded = True
-            # Load documents manually without auto-reload
-            if "processed_files" not in st.session_state:
-                st.session_state.processed_files = []
-            
-            for file_name in files:
-                if file_name not in st.session_state.processed_files:
-                    st.session_state.processed_files.append(file_name)
 
     # Display files in sidebar (no logging needed)
     if st.session_state.get("processed_files"):
@@ -409,7 +398,7 @@ def main():
                         key="show_more_files",
                     ):
                         st.session_state.show_all_files = True
-                        st.experimental_rerun()
+                        safe_rerun()
 
                 # Show all files if requested
                 if st.session_state.get("show_all_files", False):
@@ -428,14 +417,16 @@ def main():
 
                     if st.button("📋 Thu gọn", key="collapse_files"):
                         st.session_state.show_all_files = False
-                        st.experimental_rerun()
+                        safe_rerun()
         else:
             st.write("📄 No files uploaded")
 
         # Add new file button
         if st.button("📁 Thêm file mới", type="primary"):
             st.session_state.force_show_upload = True
-            st.experimental_rerun()
+            safe_rerun()
+
+        # (Removed) Manual process button for uploads per user request
 
         # Delete all files button
         if st.session_state.get("processed_files"):
@@ -447,6 +438,17 @@ def main():
                 # Clear files from database
                 if rag_pipeline:
                     rag_pipeline.clear_documents()
+
+                # Also remove all extracted images that came from these files
+                try:
+                    # Remove by each processed file name
+                    for fname in list(st.session_state.get("processed_files", [])):
+                        try:
+                            image_database.remove_images_by_source(fname)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
 
                 # Clear files from uploads folder
                 import shutil
@@ -460,13 +462,13 @@ def main():
                 st.session_state.auto_reloaded = False
 
                 st.success("✅ Đã xóa hết files!")
-                st.experimental_rerun()
+                safe_rerun()
 
         # Clear chat button
         if st.button("🗑️ Xóa lịch sử chat", type="secondary"):
             st.session_state.chat_history = []
             save_chat_history([])
-            st.experimental_rerun()
+            safe_rerun()
 
         # (Removed) Buttons for Weaviate chat operations per user request
 
@@ -499,9 +501,38 @@ def main():
                     st.info("🖼️ **Ảnh liên quan trong tài liệu:**")
                     for i, img in enumerate(imgs[:1]):  # show at most 1 image per message
                         try:
-                            st.image(img.get("path"), caption=(img.get("context", "")[:100] + "..."))
-                        except Exception:
-                            pass
+                            img_path = img.get("path") or ""
+                            img_name = img.get("filename", "")
+                            # Try to auto-fix double extensions if file not found
+                            def _normalize_path(p: str) -> str:
+                                if not isinstance(p, str):
+                                    return ""
+                                for ext in [".pdf", ".docx", ".xlsx", ".md", ".pptx", ".csv", ".txt"]:
+                                    double = f"{ext}{ext}"
+                                    if p.endswith(double):
+                                        return p[:-len(ext)]
+                                return p
+                            display_path = img_path
+                            if not os.path.exists(display_path):
+                                fixed_path = _normalize_path(display_path)
+                                if fixed_path != display_path and os.path.exists(fixed_path):
+                                    display_path = fixed_path
+                                    # Update in-memory history so subsequent renders use the fixed path
+                                    img["path"] = fixed_path
+                                    # Also fix filename if needed
+                                    if img_name:
+                                        for ext in [".pdf", ".docx", ".xlsx", ".md", ".pptx", ".csv", ".txt"]:
+                                            double = f"{ext}{ext}"
+                                            if img_name.endswith(double):
+                                                img["filename"] = img_name[:-len(ext)]
+                                                break
+
+                            if os.path.exists(display_path):
+                                st.image(display_path, caption=(img.get("context", "")[:100] + "..."))
+                            else:
+                                st.warning(f"⚠️ Ảnh không tồn tại: {img.get('filename', 'Unknown')}")
+                        except Exception as e:
+                            st.warning(f"⚠️ Lỗi hiển thị ảnh: {str(e)}")
                 if message.get("sources"):
                     with st.expander("📚 Nguồn tham khảo"):
                         for source in message["sources"]:
@@ -526,7 +557,7 @@ def main():
     if not has_files or force_show:
         st.subheader("📁 Upload Documents")
         st.info(
-            "💡 Upload documents để chat với AI. Hỗ trợ: PDF, DOCX, TXT, MD, XLSX, CSV, HTML, JSON"
+            "💡 Upload documents để chat với AI. Hỗ trợ: PDF, DOCX, MD, XLSX"
         )
 
         uploaded_files = st.file_uploader(
@@ -542,7 +573,7 @@ def main():
 
             # Hide upload area after processing
             st.session_state.force_show_upload = False
-            st.experimental_rerun()
+            safe_rerun()
 
 
 def fix_double_extension(filename: str) -> str:
@@ -682,7 +713,7 @@ def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> 
     # Final success message
     if processed_count > 0:
         status_container.success(f"🚀 Đã xử lý thành công {processed_count} file!")
-        st.experimental_rerun()
+        safe_rerun()
     else:
         status_container.error("❌ Không có file nào được xử lý thành công")
 
@@ -792,14 +823,24 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
                                 pass
                             source_files.add(src)
 
+                # If no documents or no sources extracted from documents, also try using labeled sources
+                if not source_files:
+                    labeled_sources = result.get("sources", []) if isinstance(result, dict) else []
+                    for label in labeled_sources:
+                        try:
+                            src_label = str(label)
+                            import os as _os
+                            src_label = _os.path.basename(src_label)
+                            if src_label:
+                                source_files.add(src_label)
+                        except Exception:
+                            continue
+
                 # Fetch images strictly by matched source files
                 relevant_images = []
                 for source_file in source_files:
                     relevant_images.extend(image_database.get_images_by_source(source_file))
 
-                # If nothing matched by source, try query-based search (still only for image queries)
-                if not relevant_images:
-                    relevant_images = image_database.find_relevant_images(prompt, max_results=3)
 
                 # Show at most one image if any matched
                 if relevant_images:
@@ -815,15 +856,40 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
                     if display_images:
                         st.info("🖼️ **Ảnh liên quan trong tài liệu:**")
                         for i, img in enumerate(display_images):
-                            st.image(img["path"], caption=img.get("context", "")[:100] + "...")
-                            with open(img["path"], "rb") as fh:
-                                st.download_button(
-                                    "📥 Tải ảnh",
-                                    fh.read(),
-                                    file_name=img.get("filename", "image.png"),
-                                    mime="image/png",
-                                    key=f"download_img_{i}_{img.get('filename', 'image')}",
-                                )
+                            try:
+                                # Normalize duplicate extensions anywhere in path/filename
+                                def _normalize_double_ext(s: str) -> str:
+                                    if not isinstance(s, str):
+                                        return ""
+                                    exts = [".pdf", ".docx", ".xlsx", ".md", ".pptx", ".csv", ".txt"]
+                                    changed = True
+                                    while changed:
+                                        changed = False
+                                        for ext in exts:
+                                            double = f"{ext}{ext}"
+                                            if double in s:
+                                                s = s.replace(double, ext)
+                                                changed = True
+                                    return s
+
+                                display_path = _normalize_double_ext(img.get("path", ""))
+                                display_name = _normalize_double_ext(img.get("filename", ""))
+
+                                # Check if image file exists before displaying
+                                if os.path.exists(display_path):
+                                    st.image(display_path, caption=img.get("context", "")[:100] + "...")
+                                    with open(display_path, "rb") as fh:
+                                        st.download_button(
+                                            "📥 Tải ảnh",
+                                            fh.read(),
+                                            file_name=(display_name or img.get("filename", "image.png")),
+                                            mime="image/png",
+                                            key=f"download_img_{i}_{img.get('filename', 'image')}",
+                                        )
+                                else:
+                                    st.warning(f"⚠️ Ảnh không tồn tại: {display_name or img.get('filename', 'Unknown')}")
+                            except Exception as e:
+                                st.warning(f"⚠️ Lỗi hiển thị ảnh: {str(e)}")
                         # Persist images with this message
                         persisted_imgs = [
                             {"path": im.get("path"), "filename": im.get("filename"), "context": im.get("context", "")}

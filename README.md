@@ -1,40 +1,26 @@
-# 🤖 Hybrid RAG Chatbot với Qdrant Cloud
+.\# 🤖 RAG Chatbot (Haystack 2.x + Weaviate)
 
-**Hybrid RAG Pipeline** - Giải pháp tối ưu performance và độ tin cậy cao, tích hợp Qdrant Cloud cho data persistence.
+RAG chatbot sử dụng Haystack 2.x làm core và Weaviate làm vector database. Streamlit cho UI. Không dùng fallback framework.
 
 ## 🚀 Tính năng
 
-- **🔧 Hybrid Architecture**: Haystack làm core, LangChain làm fallback
-- **📚 Multi-format Support**: PDF, DOCX, TXT, MD, XLSX, XLS, CSV, HTML, JSON
-- **⚡ Auto Fallback**: Tự động chuyển sang LangChain khi Haystack có vấn đề
-- **🎯 Smart Retrieval**: Embedding + Ranking + Diversity
-- **💬 Chat Interface**: UI thân thiện giống ChatGPT
-- **📊 Real-time Stats**: Hiển thị pipeline đang hoạt động
-- **🖼️ Image Support**: Trích xuất và hiển thị ảnh từ tài liệu
-- **☁️ Cloud Storage**: Qdrant Cloud cho data persistence và portability
-- **🔍 Smart File Management**: Search, pagination, file type icons
+- **Haystack 2.x**: Pipeline retrieval + generation, prompt templating
+- **Weaviate**: Lưu trữ vector, truy vấn semantic (client v4)
+- **Streamlit UI**: Chat, upload, quản lý file, hiển thị bảng/ảnh
+- **Image extraction**: PDF/DOCX/XLSX/HTML → PNG + metadata
+- **Nguồn trích dẫn**: Hiển thị filename, page
 
-## 🏗️ Kiến trúc Hybrid
+## 🏗️ Kiến trúc
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Hybrid RAG Pipeline                      │
 ├─────────────────────────────────────────────────────────────┤
-│  🎯 Primary: Haystack Core                                  │
-│  ├── UnstructuredFileConverter (Universal)                 │
-│  ├── PreProcessor (Cleaning + Splitting)                   │
-│  ├── InMemoryDocumentStore                                 │
-│  ├── EmbeddingRetriever (OpenAI)                           │
-│  ├── SentenceTransformersRanker                            │
-│  ├── LostInTheMiddleRanker                                 │
-│  └── PromptNode (OpenAI GPT)                               │
-├─────────────────────────────────────────────────────────────┤
-│  🔄 Fallback: LangChain                                    │
-│  ├── Document Loaders (PDF, DOCX, TXT)                     │
-│  ├── RecursiveCharacterTextSplitter                        │
-│  ├── FAISS Vector Store                                    │
-│  ├── OpenAI Embeddings                                     │
-│  └── LLMChain (OpenAI GPT)                                 │
+│  🎯 Haystack 2.x Pipeline                                   │
+│  ├── Document processing (split, metadata)                 │
+│  ├── WeaviateDocumentStore (custom v4 client)              │
+│  ├── Retriever + Reranker                                  │
+│  └── OpenAI Generator                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -317,11 +303,10 @@ cd RAG-chatbot
 # Tạo file .env
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Qdrant Cloud Configuration (Optional)
-QDRANT_HOST=your-cluster.qdrant.io
-QDRANT_PORT=6333
-QDRANT_API_KEY=your-api-key
-QDRANT_COLLECTION_NAME=rag_documents
+# Weaviate Cloud (bắt buộc)
+WEAVIATE_URL=https://<cluster>.weaviate.cloud
+WEAVIATE_API_KEY=<api_key>
+WEAVIATE_CLASS_NAME=RAGDocuments
 ```
 
 ### 3. Cài đặt Dependencies
@@ -368,14 +353,12 @@ RAG-chatbot/
 └── README.md                       # This file
 ```
 
-## 🎯 Ưu điểm của Hybrid Approach
+## 🎯 Ghi chú
 
 ### **1. Performance Tối Ưu**
 
-- **Haystack Core**: Xử lý nhanh với pipeline tối ưu
-- **Ranking Layers**: SentenceTransformers + LostInTheMiddle
-- **Memory Efficient**: InMemoryDocumentStore
-- **Caching**: @st.cache_resource và @lru_cache
+- Sử dụng Haystack 2.x thuần, không fallback framework khác.
+- Vector DB bắt buộc là Weaviate; không dùng InMemoryDocumentStore trong production.
 
 ### **2. Độ Tin Cậy Cao**
 

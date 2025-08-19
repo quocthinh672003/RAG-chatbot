@@ -132,7 +132,7 @@ class AppConfig:
     upload_dir: str = "uploads"
     log_level: str = "INFO"
     permission_key: str = "permission_groups"
-    debug_mode: bool = False
+
     session_timeout: int = 3600  # 1 hour
 
     @classmethod
@@ -141,7 +141,7 @@ class AppConfig:
             upload_dir=os.getenv("UPLOAD_DIR", "uploads"),
             log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
             permission_key=os.getenv("META_PERMISSION_KEY", "permission_groups"),
-            debug_mode=os.getenv("DEBUG_MODE", "false").lower() == "true",
+    
             session_timeout=int(os.getenv("SESSION_TIMEOUT", "3600")),
         )
 
@@ -246,7 +246,7 @@ class Config:
             "app": {
                 "upload_dir": self.app.upload_dir,
                 "log_level": self.app.log_level,
-                "debug_mode": self.app.debug_mode,
+    
             },
             "image": {
                 "max_image_size": self.image.max_image_size,

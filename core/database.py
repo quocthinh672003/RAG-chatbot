@@ -44,11 +44,8 @@ class QdrantDocumentStore:
                         size=self.embedding_dim, distance=Distance.COSINE
                     ),
                 )
-                print(f"✅ Created collection: {self.collection_name}")
-            else:
-                print(f"✅ Using existing collection: {self.collection_name}")
-        except Exception as e:
-            print(f"❌ Error creating collection: {e}")
+        except Exception:
+            pass
 
     def write_documents(self, documents: List[Document]):
         """Add documents to store"""
@@ -87,9 +84,7 @@ class QdrantDocumentStore:
         if points:
             try:
                 self.client.upsert(collection_name=self.collection_name, points=points)
-                print(f"✅ Added {len(points)} documents to Qdrant")
             except Exception as e:
-                print(f"❌ Error adding documents to Qdrant: {e}")
                 raise
 
     def get_all_documents(self) -> List[Document]:
@@ -114,13 +109,10 @@ class QdrantDocumentStore:
                     )
                     documents.append(doc)
                 except Exception as e:
-                    print(f"❌ Error processing document point: {e}")
                     continue
 
-            print(f"✅ Retrieved {len(documents)} documents from Qdrant")
             return documents
         except Exception as e:
-            print(f"❌ Error getting documents: {e}")
             return []
 
     def delete_documents(self, document_ids: List[str]):
@@ -130,9 +122,8 @@ class QdrantDocumentStore:
             self.client.delete(
                 collection_name=self.collection_name, points_selector=point_ids
             )
-            print(f"✅ Deleted {len(document_ids)} documents")
         except Exception as e:
-            print(f"❌ Error deleting documents: {e}")
+            pass
 
     def clear_collection(self):
         """Clear all documents from collection"""
@@ -147,11 +138,8 @@ class QdrantDocumentStore:
                 self.client.delete(
                     collection_name=self.collection_name, points_selector=point_ids
                 )
-                print(f"✅ Cleared {len(point_ids)} documents from collection")
-            else:
-                print("✅ Collection is already empty")
         except Exception as e:
-            print(f"❌ Error clearing collection: {e}")
+            pass
 
     def get_document_count(self) -> int:
         """Get number of documents in collection"""
@@ -161,7 +149,6 @@ class QdrantDocumentStore:
             collection_info = self.client.get_collection(self.collection_name)
             return collection_info.points_count
         except Exception as e:
-            print(f"❌ Error getting document count: {e}")
             return 0
 
 
@@ -170,8 +157,7 @@ def get_document_store():
     try:
         return QdrantDocumentStore()
     except Exception as e:
-        print(f"❌ Failed to connect to Qdrant: {e}")
-        print("🔄 Falling back to in-memory store...")
+        pass
 
         # Fallback to simple in-memory store
         class SimpleDocumentStore:

@@ -19,18 +19,14 @@ class AppFactory:
     
     def initialize_app(self):
         """Initialize the application and all services"""
-        print("🔄 Initializing services...")
         
         # Initialize RAG pipeline
         self.rag_pipeline = rag_pipeline
         if self.rag_pipeline is None:
-            print("⚠️ Warning: RAG pipeline not available, using fallback")
+            pass  # Silent fallback
         
         # Initialize image database
         self.image_database = ImageDatabase()
-        
-        print("✅ Services initialized")
-        print("✅ Application initialized successfully")
     
     def get_rag_pipeline(self):
         """Get RAG pipeline instance"""
