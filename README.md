@@ -1,525 +1,218 @@
-.\# 🤖 RAG Chatbot (Haystack 2.x + Weaviate)
+# 🤖 RAG Chatbot với Image Support
 
-RAG chatbot sử dụng Haystack 2.x làm core và Weaviate làm vector database. Streamlit cho UI. Không dùng fallback framework.
+Ứng dụng RAG (Retrieval-Augmented Generation) chatbot hybrid với khả năng trích xuất và tìm kiếm ảnh từ tài liệu đa định dạng.
 
-## 🚀 Tính năng
+## 🚀 Tính năng chính
 
-- **Haystack 2.x**: Pipeline retrieval + generation, prompt templating
-- **Weaviate**: Lưu trữ vector, truy vấn semantic (client v4)
-- **Streamlit UI**: Chat, upload, quản lý file, hiển thị bảng/ảnh
-- **Image extraction**: PDF/DOCX/XLSX/HTML → PNG + metadata
-- **Nguồn trích dẫn**: Hiển thị filename, page
+- **💬 Chat thông minh**: Tương tác với tài liệu qua RAG pipeline
+- **📄 Đa định dạng**: Hỗ trợ PDF, DOCX, TXT, MD
+- **🖼️ Trích xuất ảnh**: Tự động trích xuất ảnh từ tài liệu với metadata
+- **🔍 Tìm kiếm ảnh**: Tìm kiếm ảnh liên quan dựa trên context và keywords
+- **📊 Hiển thị bảng**: Tự động phát hiện và hiển thị bảng dữ liệu
+- **💾 Lưu trữ chat**: Lưu lịch sử chat và tài liệu đã upload
+- **🎯 Nguồn trích dẫn**: Hiển thị chính xác nguồn thông tin
 
-## 🏗️ Kiến trúc
+## 🏗️ Kiến trúc hệ thống
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Hybrid RAG Pipeline                      │
+│                    Streamlit UI                             │
 ├─────────────────────────────────────────────────────────────┤
-│  🎯 Haystack 2.x Pipeline                                   │
-│  ├── Document processing (split, metadata)                 │
-│  ├── WeaviateDocumentStore (custom v4 client)              │
-│  ├── Retriever + Reranker                                  │
-│  └── OpenAI Generator                                      │
+│  📁 File Upload & Management                                │
+│  💬 Chat Interface                                          │
+│  🖼️ Image Display & Search                                  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Core Services                            │
+├─────────────────────────────────────────────────────────────┤
+│  🔧 App Factory                                             │
+│  📄 Document Service                                        │
+│  🎯 RAG Pipeline (Haystack 2.x)                            │
+│  🖼️ Image Database                                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    External Services                        │
+├─────────────────────────────────────────────────────────────┤
+│  🧠 OpenAI API (GPT-4o-mini)                               │
+│  🗄️ Weaviate Cloud (Vector Database)                       │
+│  📊 Local Storage (Images & Chat History)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 📋 Logic Code và Luồng Đi Chi Tiết
+## 🛠️ Công nghệ sử dụng
 
-### **🔄 Main Application Flow (app.py)**
+### **Core Framework**
+- **Streamlit 1.37.1**: Web UI framework
+- **Haystack 2.7.0**: RAG pipeline framework
+- **Weaviate Client 4.7.1**: Vector database
 
-#### **1. Initialization Phase**
+### **AI & ML**
+- **OpenAI 1.40.8**: GPT-4o-mini cho text generation
+- **Pydantic 2.8.2**: Data validation
 
-```python
-def main():
-    """
-    🚀 Main application function - Khởi tạo và quản lý toàn bộ ứng dụng
+### **Document Processing**
+- **PyPDF 4.3.1**: Xử lý PDF files
+- **python-docx 1.1.2**: Xử lý DOCX files
+- **openpyxl 3.1.5**: Xử lý Excel files
+- **markdown 3.6**: Xử lý Markdown files
+- **PyMuPDF 1.24.9**: Trích xuất ảnh từ PDF
+- **BeautifulSoup 4.12.3**: Xử lý HTML files
 
-    Luồng đi:
-    1. Initialize services với caching (@st.cache_resource)
-    2. Download NLTK data một lần duy nhất
-    3. Load chat history từ file JSON
-    4. Auto-reload documents từ uploads folder
-    5. Render UI components
-    """
-```
+### **Image Processing**
+- **Pillow 10.4.0**: Xử lý và lưu ảnh
+- **zipfile**: Trích xuất ảnh từ Excel/PowerPoint
+- **requests 2.32.3**: Download ảnh từ URL
 
-#### **2. Service Initialization**
+### **Utilities**
+- **python-dotenv 1.0.1**: Environment variables
+- **pandas 2.2.2**: Data processing
+- **loguru 0.7.2**: Logging
+- **orjson 3.10.7**: Fast JSON processing
 
-```python
-@st.cache_resource
-def initialize_services():
-    """
-    🔧 Initialize services với caching cho performance tối ưu
-
-    Luồng đi:
-    1. Gọi initialize_app() từ app_factory
-    2. Lấy AppFactory instance
-    3. Cache result để tránh re-initialization
-    4. Return factory để access services
-    """
-```
-
-#### **3. Chat History Management**
-
-```python
-@lru_cache(maxsize=1)
-def load_chat_history() -> List[Dict[str, Any]]:
-    """
-    📚 Load chat history từ JSON file với caching
-
-    Luồng đi:
-    1. Check file tồn tại
-    2. Load JSON với UTF-8 encoding
-    3. Cache result để tránh re-reading
-    4. Return empty list nếu file không tồn tại
-    """
-
-def save_chat_history(chat_history: List[Dict[str, Any]]) -> None:
-    """
-    💾 Save chat history vào JSON file
-
-    Luồng đi:
-    1. Write JSON với UTF-8 encoding
-    2. Clear cache để force reload
-    3. Log success/failure
-    """
-```
-
-#### **4. Document Auto-Reload**
-
-```python
-def auto_reload_documents(rag_pipeline, image_database) -> None:
-    """
-    🔄 Auto-reload documents từ uploads folder
-
-    Luồng đi:
-    1. Get files từ uploads directory
-    2. Check session state để tránh duplicate processing
-    3. Process từng file:
-       - Convert với DocumentService
-       - Add vào RAG pipeline
-       - Extract images
-       - Add vào processed_files list
-    4. Log results
-    """
-```
-
-#### **5. File Upload Processing**
-
-```python
-def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> None:
-    """
-    📁 Process uploaded files với error handling
-
-    Luồng đi:
-    1. Initialize processed_files và failed_files lists
-    2. Process từng file:
-       - Save file to disk
-       - Convert với DocumentService
-       - Add vào RAG pipeline
-       - Extract images
-       - Update session state
-    3. Display results và errors
-    """
-```
-
-#### **6. Chat Input Processing**
-
-```python
-def process_chat_input_old(prompt, rag_pipeline, image_database):
-    """
-    💬 Process chat input với Hybrid RAG
-
-    Luồng đi:
-    1. Display user message
-    2. Query RAG pipeline
-    3. Display AI answer
-    4. Find relevant images:
-       - Extract source files từ documents
-       - Search images by source file
-       - Fallback to query-based search
-    5. Display images với download buttons
-    6. Show sources
-    7. Save to chat history
-    """
-```
-
-#### **7. Smart File List Management**
-
-```python
-# Trong main() function - Sidebar section
-"""
-📋 Smart File List với Search và Pagination
-
-Luồng đi:
-1. Check processed_files trong session state
-2. Add search input với placeholder
-3. Filter files based on search term
-4. Show file count (filtered/total)
-5. Display files với pagination:
-   - Limit to 10 files initially
-   - Show "Xem thêm" button nếu cần
-   - Add file type icons
-   - Truncate long filenames
-6. Handle "Show All" và "Thu gọn" buttons
-"""
-```
-
-### **🔧 File Processing Logic**
-
-#### **Document Service Flow**
-
-```python
-# services/document_service.py
-class DocumentService:
-    def convert_file(self, file_path: str) -> List[Document]:
-        """
-        🔄 Convert file thành Documents
-
-        Luồng đi:
-        1. Detect file type từ extension
-        2. Use appropriate converter:
-           - PDF: PyPDF2Loader
-           - DOCX: Docx2txtLoader
-           - TXT: TextLoader
-           - MD: UnstructuredMarkdownLoader
-           - XLSX: UnstructuredExcelLoader
-        3. Load documents
-        4. Add metadata (source, timestamp)
-        5. Return list of Documents
-        """
-```
-
-#### **Image Extraction Flow**
-
-```python
-# services/image_database.py
-class ImageDatabase:
-    def extract_images_from_any_file(self, file_path: str, filename: str) -> List[Dict]:
-        """
-        🖼️ Extract images từ bất kỳ file type nào
-
-        Luồng đi:
-        1. Detect file type
-        2. Use appropriate extractor:
-           - PDF: PyMuPDF (fitz)
-           - DOCX: python-docx
-           - XLSX: openpyxl
-        3. Extract images với context
-        4. Save to local storage
-        5. Update metadata
-        6. Return image info
-        """
-```
-
-### **🎯 Hybrid RAG Pipeline Logic**
-
-#### **Primary Flow (Haystack)**
-
-```python
-# services/hybrid_rag_pipeline.py
-class HybridRAGPipeline:
-    def query(self, query: str) -> Dict[str, Any]:
-        """
-        🎯 Query với Hybrid RAG Pipeline
-
-        Luồng đi:
-        1. Try Haystack pipeline first:
-           - EmbeddingRetriever → SentenceTransformersRanker → LostInTheMiddleRanker → PromptNode
-        2. If Haystack fails, fallback to LangChain:
-           - FAISS VectorStore → SimilaritySearch → LLMChain
-        3. Return unified result format
-        """
-```
-
-#### **Fallback Logic**
-
-```python
-def query_with_fallback(self, query: str) -> Dict[str, Any]:
-    """
-    🔄 Fallback logic cho reliability
-
-    Luồng đi:
-    1. Try Haystack pipeline
-    2. Catch any exception
-    3. Log fallback reason
-    4. Try LangChain pipeline
-    5. Return result hoặc raise error
-    """
-```
-
-### **📊 Session State Management**
-
-#### **Key Session Variables**
-
-```python
-# Session State Structure
-st.session_state = {
-    "chat_history": [],              # Chat messages
-    "processed_files": [],           # Uploaded files
-    "auto_reloaded": False,          # Auto-reload flag
-    "force_show_upload": False,      # Show upload area
-    "show_all_files": False,         # File list pagination
-    "last_displayed_images": [],     # Last shown images
-    "file_search": ""                # File search term
-}
-```
-
-#### **State Persistence**
-
-```python
-# Chat History Persistence
-"""
-💾 Chat History được lưu vào file JSON:
-- Load khi app khởi động
-- Save sau mỗi interaction
-- Cache để performance
-- UTF-8 encoding cho Vietnamese
-"""
-
-# File List Persistence
-"""
-📁 File List được lưu trong session state:
-- Auto-reload từ uploads folder
-- Persist qua app restarts
-- Search và filter real-time
-- Pagination cho performance
-"""
-```
-
-## 🛠️ Cài đặt
+## 📋 Cài đặt
 
 ### 1. Clone Repository
-
 ```bash
 git clone <repository-url>
 cd RAG-chatbot
 ```
 
-### 2. Tạo Environment File
-
+### 2. Tạo Virtual Environment
 ```bash
-# Tạo file .env
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Weaviate Cloud (bắt buộc)
-WEAVIATE_URL=https://<cluster>.weaviate.cloud
-WEAVIATE_API_KEY=<api_key>
-WEAVIATE_CLASS_NAME=RAGDocuments
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# hoặc
+.venv\Scripts\activate     # Windows
 ```
 
 ### 3. Cài đặt Dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Chạy Application
+### 4. Cấu hình Environment
+Tạo file `.env` trong thư mục gốc:
+```env
+# OpenAI API Key (bắt buộc)
+OPENAI_API_KEY=your_openai_api_key_here
 
+# Weaviate Cloud (bắt buộc)
+WEAVIATE_URL=https://your-cluster.weaviate.network
+WEAVIATE_API_KEY=your_weaviate_api_key
+WEAVIATE_CLASS_NAME=RAGDocuments
+```
+
+### 5. Chạy ứng dụng
 ```bash
 streamlit run app.py
 ```
+
+Ứng dụng sẽ chạy tại: `http://localhost:8501`
 
 ## 📁 Cấu trúc Project
 
 ```
 RAG-chatbot/
-├── app.py                          # 🚀 Main Streamlit UI với logic chi tiết
-├── config.py                       # Configuration management
+├── app.py                          # 🚀 Main Streamlit application
 ├── app_factory.py                  # 🔧 Service factory pattern
+├── config.py                       # ⚙️ Configuration management
+├── requirements.txt                # 📦 Dependencies
+├── README.md                       # 📖 Documentation
+├── chat_history.json               # 💬 Chat history persistence
 ├── services/
-│   ├── hybrid_rag_pipeline.py      # 🎯 Hybrid RAG Pipeline
+│   ├── __init__.py
 │   ├── document_service.py         # 📄 Document processing
-│   ├── ingest_service.py           # 📥 Document ingestion
-│   ├── query_service.py            # 🔍 Query processing
-│   └── image_database.py           # 🖼️ Image extraction & management
+│   ├── image_database.py           # 🖼️ Image extraction & search
+│   └── rag_pipeline.py             # 🎯 RAG pipeline (Haystack 2.x)
 ├── core/
-│   ├── constants.py                # Constants
-│   └── database.py                 # Database utilities
-├── migrations/                     # 🚀 Migration System
-│   ├── __init__.py                 # Package initialization
-│   ├── base_migration.py           # Base migration class
-│   ├── document_migration.py       # Document migration
-│   ├── image_migration.py          # Image migration
-│   └── migration_manager.py        # Migration manager
+│   ├── __init__.py
+│   ├── constants.py                # 📋 Constants & configurations
+│   ├── database.py                 # 🗄️ Database utilities
+│   └── weaviate_database.py        # 🌐 Weaviate integration
 ├── utils/
-│   └── helpers.py                  # Utility functions
-├── migrate.py                      # Migration script
-├── requirements.txt                # Dependencies với comments
+│   ├── __init__.py
+│   └── helpers.py                  # 🛠️ Utility functions
 ├── uploads/                        # 📁 Uploaded files storage
 ├── image_database/                 # 🖼️ Extracted images storage
-├── chat_history.json               # 💬 Chat history persistence
-└── README.md                       # This file
+│   ├── extracted/                  # Ảnh trích xuất từ tài liệu
+│   ├── screenshots/                # Screenshot của tài liệu
+│   ├── documents/                  # Ảnh từ document preview
+│   ├── general/                    # Ảnh tổng quát khác
+│   └── image_metadata.json         # Metadata của ảnh
+└── .gitignore                      # Git ignore rules
 ```
 
-## 🎯 Ghi chú
+## 🎯 Tính năng chi tiết
 
-### **1. Performance Tối Ưu**
+### **📄 Document Processing**
+- **Đa định dạng**: PDF, DOCX, TXT, MD
+- **Text extraction**: Trích xuất text với metadata
+- **Chunking**: Chia nhỏ tài liệu thành chunks tối ưu
+- **Metadata**: Lưu trữ thông tin nguồn, trang, loại file
 
-- Sử dụng Haystack 2.x thuần, không fallback framework khác.
-- Vector DB bắt buộc là Weaviate; không dùng InMemoryDocumentStore trong production.
+### **🖼️ Image Extraction & Search**
+- **Trích xuất ảnh**: Từ PDF, DOCX, Excel, PowerPoint
+- **Context analysis**: Phân tích context xung quanh ảnh
+- **Keyword extraction**: Trích xuất keywords từ context
+- **Smart search**: Tìm kiếm ảnh dựa trên query và context
+- **Metadata storage**: Lưu trữ thông tin ảnh với JSON
 
-### **2. Độ Tin Cậy Cao**
+### **💬 Chat Interface**
+- **Real-time chat**: Tương tác trực tiếp với AI
+- **Source citation**: Hiển thị nguồn thông tin chính xác
+- **Table detection**: Tự động phát hiện và hiển thị bảng
+- **Image display**: Hiển thị ảnh liên quan với download
+- **Chat history**: Lưu trữ và khôi phục lịch sử chat
 
-- **Auto Fallback**: Tự động chuyển sang LangChain khi có lỗi
-- **Error Handling**: Graceful degradation
-- **Dependency Resilience**: Không bị phụ thuộc vào 1 framework
-- **Session Persistence**: Chat history và file list được lưu
+### **📁 File Management**
+- **Smart file list**: Hiển thị danh sách file với search
+- **File type icons**: Icons cho từng loại file
+- **Pagination**: Phân trang cho danh sách file dài
+- **Auto-reload**: Tự động tải lại tài liệu từ thư mục uploads
 
-### **3. Flexibility**
 
-- **Universal Converter**: UnstructuredFileConverter xử lý mọi file type
-- **Configurable**: Dễ dàng thay đổi components
-- **Extensible**: Dễ thêm features mới
-- **Smart UI**: Search, pagination, file type icons
+## 🚀 Sử dụng
 
-## 🔄 Hybrid Pipeline Logic
+### **1. Upload Tài liệu**
+- Kéo thả hoặc click để upload file
+- Hỗ trợ: PDF, DOCX, TXT, MD, XLSX
+- Tự động trích xuất text và ảnh
 
-### **Primary Flow (Haystack)**
+### **2. Chat với AI**
+- Gõ câu hỏi về tài liệu đã upload
+- AI sẽ trả lời dựa trên nội dung tài liệu
+- Hiển thị nguồn thông tin chính xác
 
-```python
-# 1. Document Processing
-UnstructuredFileConverter → PreProcessor → InMemoryDocumentStore
+### **3. Tìm kiếm Ảnh**
+- Hỏi về ảnh trong tài liệu
+- AI sẽ tìm và hiển thị ảnh liên quan
+- Có thể download ảnh về máy
 
-# 2. Retrieval Pipeline
-Query → EmbeddingRetriever → SentenceTransformersRanker → LostInTheMiddleRanker → PromptNode
-```
+### **4. Quản lý File**
+- Xem danh sách file đã upload
+- Tìm kiếm file theo tên
+- Xóa file không cần thiết
 
-### **Fallback Flow (LangChain)**
+## 🔍 Tìm kiếm Ảnh
 
-```python
-# 1. Document Processing
-DocumentLoader → RecursiveCharacterTextSplitter → FAISS VectorStore
+### **Logic Tìm kiếm**
+1. **Context matching**: +2 điểm cho mỗi từ khớp trong context
+2. **Keyword matching**: +3 điểm cho mỗi keyword khớp
+3. **Source file relevance**: +1 điểm nếu tên file liên quan
+4. **General queries**: +5 điểm nếu query hỏi về ảnh nói chung
 
-# 2. Retrieval Pipeline
-Query → SimilaritySearch → LLMChain
-```
+### **Logic Tìm kiếm Ảnh**
+- **Context matching**: +2 điểm cho mỗi từ khớp trong context xung quanh ảnh
+- **Keyword matching**: +3 điểm cho mỗi keyword được trích xuất từ context
+- **Source file relevance**: +1 điểm nếu tên file nguồn liên quan
+- **General queries**: +5 điểm nếu query hỏi chung về ảnh
 
-### **Auto Switch Logic**
+### **Cách Keywords được tạo**
+Keywords được trích xuất **động** từ context xung quanh ảnh, Hệ thống sẽ:
+1. Phân tích text xung quanh ảnh trong tài liệu
+2. Tìm các từ khóa liên quan đến chủ đề
+3. Lưu keywords vào metadata của ảnh
+4. Sử dụng keywords này để tìm kiếm khi user hỏi
 
-```python
-try:
-    # Try Haystack first
-    haystack_result = haystack_pipeline.query(query)
-    return haystack_result
-except Exception:
-    # Fallback to LangChain
-    langchain_result = langchain_pipeline.query(query)
-    return langchain_result
-```
-
-## 📊 Performance Metrics
-
-### **Haystack Core**
-
-- **Speed**: ⚡⚡⚡⚡⚡ (Very Fast)
-- **Memory**: 💾💾💾 (Efficient)
-- **Features**: 🎯🎯🎯🎯🎯 (Full-featured)
-
-### **LangChain Fallback**
-
-- **Speed**: ⚡⚡⚡⚡ (Fast)
-- **Memory**: 💾💾💾💾 (Good)
-- **Features**: 🎯🎯🎯🎯 (Good)
-
-### **Qdrant Cloud**
-
-- **Storage**: 💾💾💾💾💾 (Unlimited)
-- **Speed**: ⚡⚡⚡⚡⚡ (Very Fast)
-- **Reliability**: 🔒🔒🔒🔒🔒 (High)
-
-## 🚀 Deployment
-
-### Local Development
-
-```bash
-streamlit run app.py
-```
-
-### Production
-
-```bash
-# Docker (nếu cần)
-docker-compose up -d
-
-# Hoặc direct
-streamlit run app.py --server.port 8501
-```
-
-## 🔧 Troubleshooting
-
-### **Haystack Import Error**
-
-- Hệ thống tự động chuyển sang LangChain
-- Không cần manual intervention
-
-### **API Key Issues**
-
-- Kiểm tra `.env` file
-- Đảm bảo `OPENAI_API_KEY` đúng format
-
-### **Memory Issues**
-
-- Giảm `chunk_size` trong config
-- Sử dụng ít documents hơn
-
-### **File List Issues**
-
-- Check `uploads/` directory
-- Verify file permissions
-- Clear session state nếu cần
-
-### **Migration Issues**
-
-```bash
-# Test connections first
-python migrate.py --test
-
-# Check specific migration
-python migrate.py --type documents
-
-# Generate detailed report
-python migrate.py --report
-```
-
-## 📈 Migration Reports
-
-### Migration Report Format
-
-```
-# Migration Report
-Generated: 2024-01-15 14:30:25
-
-## Documents Migration
-- Total: 15
-- Successful: 15
-- Failed: 0
-
-## Images Migration
-- Total: 20
-- Successful: 20
-- Failed: 0
-
-## Recent History
-- 2024-01-15T14:30:25: documents - ✅
-- 2024-01-15T14:35:10: images - ✅
-```
-
-## 🎯 Next Steps
-
-1. **Integrate with RAG Pipeline**: Cập nhật RAG pipeline để sử dụng Qdrant Cloud
-2. **Add Rollback**: Implement rollback functionality
-3. **Incremental Migration**: Support incremental updates
-4. **Monitoring**: Add monitoring và alerting
-5. **Advanced Search**: Implement semantic search cho file list
-
-## 📝 Best Practices
-
-1. **Test First**: Luôn test connections trước khi migrate
-2. **Backup**: Backup dữ liệu local trước khi cleanup
-3. **Monitor**: Theo dõi logs và reports
-4. **Validate**: Kiểm tra dữ liệu trên Qdrant Cloud sau migration
-5. **Cache**: Sử dụng caching cho performance
-6. **Error Handling**: Implement comprehensive error handling
-7. **Session Management**: Quản lý session state cẩn thận

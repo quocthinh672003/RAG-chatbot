@@ -7,10 +7,6 @@ pydantic==2.8.2
 pydantic-core==2.20.1
 
 # ===== ML/NLP STACK =====
-torch==2.3.1
-transformers==4.41.2
-sentence-transformers==3.0.1
-tokenizers==0.19.1
 numpy==1.26.4
 
 # ===== AI SERVICES =====

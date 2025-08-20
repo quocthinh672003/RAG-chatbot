@@ -22,9 +22,9 @@ def get_file_name(file_path: str) -> str:
 
 def is_supported_file_type(file_path: str, supported_types: List[str]) -> bool:
     """Check if file type is supported"""
-    ext = get_file_extension(file_path)
+    ext =  (file_path)
     return ext[1:] in supported_types if ext else False
-
+#[1:] là lấy phần tử thứ 2 trong list
 
 def create_metadata(
     file_path: str, additional_meta: Dict[str, Any] = None

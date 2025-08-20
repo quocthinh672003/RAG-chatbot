@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-🤖 Hybrid RAG Chatbot with Image Support
+🤖 RAG Chatbot 
 ========================================
 
-📋 Mô tả: Ứng dụng RAG chatbot hybrid với Haystack + LangChain fallback
-🎯 Mục đích: Xử lý tài liệu đa định dạng và chat tương tác
-🔧 Architecture: Hybrid approach với auto-fallback cho reliability cao
+📋 Mô tả: Ứng dụng RAG chatbot với Haystack 2.x và Weaviate Cloud
+🎯 Mục đích: Xử lý tài liệu đa định dạng và chat tương tác với trích xuất ảnh
+🔧 Architecture: Haystack 2.x pipeline với Weaviate vector database
 
 📊 Luồng đi chính:
 1. 🚀 Initialization: Load services, NLTK data, chat history
-2. 📁 File Management: Upload, process, auto-reload documents
-3. 💬 Chat Interface: Process queries với Hybrid RAG pipeline
+2. 📁 File Management: Upload, process documents
+3. 💬 Chat Interface: Process queries với Haystack RAG pipeline
 4. 🖼️ Image Support: Extract và display relevant images
 5. 💾 Persistence: Save chat history và session state
 
@@ -18,7 +18,7 @@
 - @st.cache_resource: Cache services để performance
 - @lru_cache: Cache chat history để tránh re-reading
 - Session State: Quản lý UI state và user data
-- Error Handling: Graceful degradation với fallback
+- Error Handling: Graceful degradation
 - File Processing: Multi-format support với DocumentService
 
 📈 Performance Optimizations:
@@ -28,11 +28,11 @@
 - Smart search và filtering
 - Memory efficient processing
 
-🔄 Hybrid Pipeline Logic:
-- Primary: Haystack Core (fast, feature-rich)
-- Fallback: LangChain (reliable, simple)
-- Auto-switch: Exception-based fallback
-- Unified: Consistent result format
+🔄 RAG Pipeline Logic:
+- Haystack 2.x: Document processing, retrieval, generation
+- Weaviate Cloud: Vector storage và semantic search
+- OpenAI: Text generation và embeddings
+- Image Database: Local image storage và search
 
 📁 File Structure:
 - uploads/: Stored uploaded files
@@ -475,8 +475,8 @@ def main():
 
 
     # Main content area
-    st.title("🤖 Hybrid RAG Chatbot")
-    st.markdown("**Hybrid RAG Pipeline với Haystack Core + LangChain Fallback**")
+    st.title("🤖 RAG Chatbot với Image Support")
+    st.markdown("**Haystack 2.x RAG Pipeline với Weaviate Cloud**")
 
     # Show files summary when files exist
     if st.session_state.get("processed_files"):
@@ -720,11 +720,11 @@ def process_uploaded_files_old(uploaded_files, rag_pipeline, image_database) -> 
 
 def process_chat_input_old(prompt, rag_pipeline, image_database):
     """
-    💬 Process chat input với Hybrid RAG
+    💬 Process chat input với Haystack RAG Pipeline
 
     🔄 Luồng đi:
     1. Display user message
-    2. Query RAG pipeline
+    2. Query Haystack RAG pipeline
     3. Display AI answer
     4. Find relevant images:
        - Extract source files từ documents
@@ -734,10 +734,11 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
     6. Show sources
     7. Save to chat history
 
-    🎯 Hybrid Pipeline:
-    - Primary: Haystack Core (fast, feature-rich)
-    - Fallback: LangChain (reliable, simple)
-    - Auto-switch: Exception-based fallback
+    🎯 Haystack 2.x Pipeline:
+    - Document processing và chunking
+    - Vector search với Weaviate
+    - OpenAI text generation
+    - Structured output với JSON
 
     🖼️ Image Display Logic:
     - Priority 1: Images từ source files
@@ -753,7 +754,7 @@ def process_chat_input_old(prompt, rag_pipeline, image_database):
     # Hiển thị câu hỏi của user trong chat
     st.chat_message("user").write(prompt)
 
-    # Lấy câu trả lời từ AI sử dụng Hybrid RAG
+            # Lấy câu trả lời từ AI sử dụng Haystack RAG Pipeline
     with st.chat_message("assistant"):
         try:
             # Sử dụng RAG pipeline để tìm câu trả lời

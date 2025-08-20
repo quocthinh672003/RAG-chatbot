@@ -1,22 +1,24 @@
 {
-  "pdf_extracted_0": {
-    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
-    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
-    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
-    "page": 2,
-    "type": "pdf_extracted",
-    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+  "docx_extracted_0": {
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx_img1.png",
+    "filename": "docx_Đô Thị Hóa.docx_img1.png",
+    "source_file": "Đô Thị Hóa.docx",
+    "type": "docx_extracted",
+    "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
     "keywords": [
-      "nông dân",
-      "ruộng",
-      "cây",
-      "đồng bằng",
-      "phát triển"
+      "giao thông",
+      "hà nội",
+      "đô thị",
+      "thành phố",
+      "phát triển",
+      "hạ tầng",
+      "môi trường",
+      "ô nhiễm"
     ]
   },
   "docx_extracted_1": {
-    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx_img1.png",
-    "filename": "docx_Đô Thị Hóa.docx_img1.png",
+    "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx_img2.png",
+    "filename": "docx_Đô Thị Hóa.docx_img2.png",
     "source_file": "Đô Thị Hóa.docx",
     "type": "docx_extracted",
     "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị",
@@ -48,5 +50,20 @@
     "type": "pdf_extracted",
     "context": "INTERN DEVELOPER\nNguyễn Đăng Quốc Thịnh\nSKILLS\nLANGUAGE\nINFORMATION TECHNOLOGY\nDUY TÂN UNIVERSITY\n2021-2025\nEDUCATION\nLanguages: HTML/CSS, Javascript,\nTypeScript.\nFramework/ Library: Node.js, Next.js,",
     "keywords": []
+  },
+  "pdf_extracted_4": {
+    "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
+    "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
+    "source_file": "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf",
+    "page": 2,
+    "type": "pdf_extracted",
+    "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng ",
+    "keywords": [
+      "nông dân",
+      "ruộng",
+      "cây",
+      "đồng bằng",
+      "phát triển"
+    ]
   }
 }

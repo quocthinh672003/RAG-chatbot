@@ -3,17 +3,17 @@ Image Database Service - Extract REAL images from ALL uploaded files
 Stores actual images extracted from any document type
 
 Mục đích:
-- Trích xuất ảnh từ tất cả các loại file (DOCX, PDF, Excel, PowerPoint, HTML)
+- Trích xuất ảnh từ tất cả các loại file (DOCX, PDF, Excel, PowerPoint)
 - Lưu trữ ảnh với metadata (context, keywords, source file)
 - Tìm kiếm ảnh liên quan dựa trên query của user
-- Cung cấp API để truy xuất ảnh từ database
 
 Công nghệ sử dụng:
 - python-docx: Trích xuất ảnh từ DOCX
 - PyMuPDF (fitz): Trích xuất ảnh từ PDF
-- zipfile: Trích xuất ảnh từ Excel/PowerPoint (vì là ZIP files)
 - PIL (Pillow): Xử lý và lưu ảnh
-- Unstructured: Trích xuất tổng quát (nếu có)
+- zipfile: Trích xuất ảnh từ Excel/PowerPoint
+- BeautifulSoup (bs4): Trích xuất ảnh từ HTML
+- requests: Download ảnh từ URL
 """
 
 import os

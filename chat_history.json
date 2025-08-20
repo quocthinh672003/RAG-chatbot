@@ -59,5 +59,107 @@
     ],
     "images": [],
     "timestamp": "2025-08-19T17:34:29.472584"
+  },
+  {
+    "question": "Economy Report 2025 có những thông tin gì",
+    "answer": "Economy Report 2025 cung cấp thông tin về dự báo GDP toàn cầu và lộ trình lạm phát.\n\nTheo tài liệu, dự báo tăng trưởng GDP toàn cầu ước tính đạt 3.2% với sự phân hóa giữa các khu vực. Tuy nhiên, tất cả các số liệu đều được tổng hợp cho mục đích thử nghiệm chatbot và không đại diện cho dữ liệu thực tế.",
+    "sources": [
+      "economy.txt"
+    ],
+    "images": [],
+    "timestamp": "2025-08-20T10:39:57.293935"
+  },
+  {
+    "question": " có table nào trong file đó không",
+    "answer": "Có, trong các file được cung cấp có chứa bảng.\n\nMỗi file trong ngữ cảnh đều có một bảng được đề cập, nhưng không có thông tin chi tiết về nội dung của các bảng này.",
+    "sources": [
+      "health.docx",
+      "weather.docx",
+      "economy.docx",
+      "technology.docx",
+      "environment.docx",
+      "education.docx",
+      "football.docx"
+    ],
+    "images": [],
+    "timestamp": "2025-08-20T10:40:20.717015"
+  },
+  {
+    "question": "Country | GDP 2024 (%) | GDP 2025 (%) | CPI 2025 (%) ",
+    "answer": "Dữ liệu về GDP và CPI cho các quốc gia trong năm 2024 và 2025 được cung cấp như sau.\n\nBảng dưới đây trình bày thông tin về GDP và CPI cho các quốc gia trong năm 2024 và 2025, được trích từ tài liệu.",
+    "sources": [
+      "economy.docx"
+    ],
+    "images": [],
+    "timestamp": "2025-08-20T10:40:47.386573"
+  },
+  {
+    "question": " thông tin về GDP và CPI cho các quốc gia",
+    "answer": "Thông tin về GDP và CPI cho các quốc gia được trình bày trong bảng dưới đây.\n\nBảng này cung cấp dữ liệu về tỷ lệ GDP dự kiến cho năm 2024 và 2025, cũng như chỉ số giá tiêu dùng (CPI) cho năm 2025 của các quốc gia như USA, China, India và EU. Dữ liệu này được trích từ nhiều tài liệu khác nhau nhưng đều có nội dung giống nhau.",
+    "sources": [
+      "economy.txt",
+      "economy.docx"
+    ],
+    "images": [],
+    "timestamp": "2025-08-20T10:41:15.336271"
+  },
+  {
+    "question": "Trong báo cáo Technology có bảng thống kê doanh thu theo năm không",
+    "answer": "Không có thông tin về bảng thống kê doanh thu theo năm trong báo cáo Technology.",
+    "sources": [],
+    "images": [],
+    "timestamp": "2025-08-20T10:46:39.070183"
+  },
+  {
+    "question": "tôi muốn hỏi về tình hình biến đổi khí hậu ảnh hưởng đến nông nghiệp ở singapore, hay phân tích và cho giải pháp, nếu có bảng thì hãy hiện bảng\n ",
+    "answer": "Không có thông tin trong tài liệu về tình hình biến đổi khí hậu ảnh hưởng đến nông nghiệp ở Singapore.",
+    "sources": [],
+    "images": [],
+    "timestamp": "2025-08-20T15:22:58.084274"
+  },
+  {
+    "question": "tôi muốn hỏi về tình hình biến đổi khí hậu ảnh hưởng đến nông nghiệp việt nam, hay phân tích và cho giải pháp, nếu có bảng thì hãy hiện bảng, trả lời bằng tiếng anh",
+    "answer": "Climate change significantly impacts agriculture in Vietnam, posing serious threats to food security and livelihoods. The main effects include rising sea levels, prolonged droughts, unusual floods, and saltwater intrusion, particularly affecting regions like the Mekong Delta and the Red River Delta.\n\nIn recent decades, the average annual temperature in Vietnam has increased by about 0.5–0.7°C, while sea levels have risen by approximately 20 cm. This has led to severe saltwater intrusion into agricultural areas, rendering hundreds of thousands of hectares of farmland unusable. The changing climate also affects crop yields and livestock health, increasing pest and disease prevalence. For instance, higher temperatures reduce the growth period of rice and increase the risk of forest fires in the Central Highlands and Central regions. To address these challenges, the Vietnamese government has implemented various action programs aimed at mitigating impacts and adapting to climate change, such as developing drought-resistant crop varieties, applying high technology in production, improving irrigation systems, and raising community awareness. Additionally, crop diversification and agricultural product diversification are being adopted in many localities. However, effective solutions require close cooperation among the government, businesses, farmers, and international organizations.",
+    "sources": [
+      "Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf"
+    ],
+    "images": [
+      {
+        "path": "image_database\\extracted\\pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
+        "filename": "pdf_Tác động của Biến đổi Khí hậu đến Nông nghiệp Việt Nam.pdf_page2_img1.png",
+        "context": "3. Hình Ảnh Thực Tế Từ Các Vùng Bị Ảnh Hưởng \n \n \nHình 1: Nông dân ở Đồng bằng sông Cửu Long đang dẫn nước vào ruộng trong mùa hạn \nhán (Nguồn: Wikimedia Commons) \n \n4. Giải Pháp Ứng Phó và Thích Ứng "
+      }
+    ],
+    "timestamp": "2025-08-20T15:23:22.838421"
+  },
+  {
+    "question": "bạn có ảnh về cây xanh của thành phố đà nẵng không",
+    "answer": "Có, tài liệu có đề cập đến hình ảnh cây xanh thành phố Đà Nẵng.\n\nTrong tài liệu, có một hình ảnh được mô tả là \"Cây xanh thành phố Đà Nẵng\" (DOC 1, PAGE: 1.0). Tuy nhiên, không có thông tin chi tiết về nội dung của hình ảnh này.",
+    "sources": [
+      "Đô Thị Hóa.docx"
+    ],
+    "images": [
+      {
+        "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx_img1.png",
+        "filename": "docx_Đô Thị Hóa.docx_img1.png",
+        "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị"
+      }
+    ],
+    "timestamp": "2025-08-20T16:15:38.861048"
+  },
+  {
+    "question": "bạn có ảnh về cây xanh của thành phố không",
+    "answer": "Có, tài liệu có hình ảnh về cây xanh thành phố Đà Nẵng.\n\nHình ảnh về cây xanh thành phố Đà Nẵng được đề cập trong tài liệu tại DOC 1.",
+    "sources": [
+      "Đô Thị Hóa.docx"
+    ],
+    "images": [
+      {
+        "path": "image_database\\extracted\\docx_Đô Thị Hóa.docx_img1.png",
+        "filename": "docx_Đô Thị Hóa.docx_img1.png",
+        "context": "1. Giới thiệu\nQuá trình đô thị hóa đang diễn ra nhanh chóng tại Việt Nam, đặc biệt là tại các thành phố lớn như Hà Nội, TP. Hồ Chí Minh, Đà Nẵng và Cần Thơ. Sự phát triển mạnh mẽ của hạ tầng, dân số và các khu công nghiệp đã góp phần thúc đẩy tăng trưởng kinh tế. Tuy nhiên, đô thị hóa cũng đặt ra nhiều thách thức nghiêm trọng đối với môi trường sống, bao gồm ô nhiễm không khí, quá tải giao thông, suy giảm không gian xanh và chất lượng nước thải đô thị.\n\n2. Mức độ gia tăng dân số đô thị"
+      }
+    ],
+    "timestamp": "2025-08-20T16:16:41.816053"
   }
 ]

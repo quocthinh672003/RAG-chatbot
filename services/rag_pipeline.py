@@ -132,6 +132,7 @@ class WeaviateDocumentStore:
             vector = emb.data[0].embedding  # type: ignore[attr-defined]
             # Weaviate v4: near_vector(near_vector=..., limit=...)
             res = self.collection.query.near_vector(near_vector=vector, limit=top_k)
+            
         except Exception as e:
             logger.error(f"near_vector failed: {e}")
             return []
